@@ -22,7 +22,7 @@
             raspberry-pi-5.display-vc4
           ];
         }
-        ({ ... }: {
+        ({ pkgs, ... }: {
           boot.loader.raspberry-pi.bootloader = "kernel";
 
           fileSystems = {
@@ -45,6 +45,17 @@
             extraGroups = [ "wheel" ];
           };
 
+          users.users.kiosk = {
+            isSystemUser = true;
+            group = "kiosk";
+            home = "/var/lib/kiosk";
+            createHome = true;
+            extraGroups = [ "video" ];
+          };
+          users.groups.kiosk = { };
+
+          hardware.graphics.enable = true;
+
           services.avahi = {
             enable = true;
             nssmdns4 = true;
@@ -60,6 +71,15 @@
           };
 
           security.sudo.wheelNeedsPassword = false;
+
+          specialisation.kiosk.configuration = {
+            services.cage = {
+              enable = true;
+              user = "kiosk";
+              program = "${pkgs.chromium}/bin/chromium --kiosk --no-first-run --disable-infobars --noerrdialogs --disable-session-crashed-bubble --disable-pinch --overscroll-history-navigation=0 http://localhost";
+              environment.NIXOS_OZONE_WL = "1";
+            };
+          };
 
           system.stateVersion = "25.05";
         })

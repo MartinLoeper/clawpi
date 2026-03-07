@@ -94,3 +94,20 @@ This builds the system locally and copies the closure to the Pi over SSH. The ge
 | `nixosConfigurations.rpi5-installer` | `nixosInstaller` | Flashable SD card images |
 
 Both share the same system configuration. `nixosSystemFull` includes RPi-optimized package overlays (FFmpeg, Kodi, VLC, libcamera, etc.) globally.
+
+### Kiosk Specialisation
+
+A `kiosk` specialisation is available that launches Cage (Wayland kiosk compositor) + Chromium in fullscreen mode, auto-logged in as the `kiosk` system user. The base system remains CLI-only by default.
+
+```sh
+# Activate kiosk mode at runtime
+sudo /run/current-system/specialisation/kiosk/bin/switch-to-configuration switch
+
+# Return to CLI mode
+sudo /run/current-system/bin/switch-to-configuration switch
+
+# Deploy directly into kiosk mode
+./scripts/deploy.sh -- --specialisation kiosk
+```
+
+See [docs/canvas.md](docs/canvas.md) for the full design rationale.
