@@ -25,11 +25,33 @@
         ({ ... }: {
           boot.loader.raspberry-pi.bootloader = "kernel";
 
+          fileSystems = {
+            "/" = {
+              device = "/dev/disk/by-label/NIXOS_SD";
+              fsType = "ext4";
+              options = [ "noatime" ];
+            };
+            "/boot/firmware" = {
+              device = "/dev/disk/by-label/FIRMWARE";
+              fsType = "vfat";
+              options = [ "noatime" "noauto" "x-systemd.automount" "x-systemd.idle-timeout=1min" ];
+            };
+          };
+
           networking.hostName = "openclaw-rpi5";
 
           users.users.nixos = {
             isNormalUser = true;
             extraGroups = [ "wheel" ];
+          };
+
+          services.avahi = {
+            enable = true;
+            nssmdns4 = true;
+            publish = {
+              enable = true;
+              addresses = true;
+            };
           };
 
           services.openssh = {

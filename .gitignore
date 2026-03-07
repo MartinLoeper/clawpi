@@ -3,3 +3,5 @@ sdc
 *.img
 *.img.zst
 *.bmap
+id_ed25519_rpi5
+id_ed25519_rpi5.pub
