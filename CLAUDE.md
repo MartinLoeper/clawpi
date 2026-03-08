@@ -20,7 +20,13 @@ The deploy builds the NixOS closure locally (cross-compiled for aarch64) and cop
 1. Continue working on other tasks — don't block on the deploy.
 2. You will be notified when the background task completes.
 3. When it finishes, check the output for errors and report the result to the user.
-4. If deploying a specialisation, append `-- --specialisation <name>` to the deploy command.
+4. If deploying a specialisation, append `--specialisation <name>` to the deploy command (no `--` separator).
+
+## Nix Build Rules
+
+- **Always** pass `--show-trace -L` (or `--print-build-logs`) to `nix build` commands so build progress is visible.
+- **Never** pipe build output through `tail`, `head`, or other filters that buffer output — this hides progress and makes long builds appear stuck.
+- When running builds in background tasks, the full output must stream to the task output file unfiltered.
 
 ## Architecture
 
@@ -29,14 +35,21 @@ The deploy builds the NixOS closure locally (cross-compiled for aarch64) and cop
   - `rpi5-installer` — for building flashable SD images
 - **Kiosk specialisation** — Cage + Chromium kiosk mode, activated at runtime or via deploy (see `docs/canvas.md`)
 - Base system is CLI-only; graphical stack is opt-in via the specialisation
+- **File structure:**
+  - `modules/base.nix` — system config (boot, users, networking, PipeWire, Avahi, SSH)
+  - `modules/kiosk.nix` — kiosk specialisation (Cage + Chromium, PipeWire wait)
+  - `home/openclaw.nix` — Home Manager config for OpenClaw gateway (kiosk user)
+  - `overlays/openclaw-gateway-fix.nix` — pnpm dependency fix for openclaw-gateway
 
 ## OpenClaw Gateway
 
-- **Service:** `openclaw-gateway.service` (systemd, `Restart=always`)
+- **Service:** `openclaw-gateway.service` (systemd user service, kiosk user)
 - **Port:** `18789`
-- **Config:** `/etc/openclaw/openclaw.json`
-- **State dir:** `/var/lib/openclaw`
-- **User/Group:** `openclaw`
+- **Config:** managed by Home Manager (`programs.openclaw`)
+- **State dir:** `/var/lib/kiosk/.openclaw`
+- **User:** `kiosk` (system user with linger)
+- **Gateway mode:** `local` (loopback only)
+- **Auth token:** auto-generated at first boot, retrieve with `./scripts/gateway-token.sh`
 - **Flake input:** `nix-openclaw` (`github:MartinLoeper/nix-openclaw/main`)
 - **Kiosk URL:** `http://localhost:18789` (Chromium points here in kiosk mode)
 
@@ -45,3 +58,5 @@ The deploy builds the NixOS closure locally (cross-compiled for aarch64) and cop
 - Bootloader: `"kernel"` (RPi kernel-based, supports generational rollback)
 - State version: `25.05`
 - Built on [nixos-raspberrypi](https://github.com/nvmd/nixos-raspberrypi) flake
+- PipeWire with ALSA + PulseAudio compat for HDMI audio
+- RTKit enabled for realtime scheduling
