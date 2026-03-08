@@ -4,6 +4,8 @@
   inputs = {
     nixos-raspberrypi.url = "github:nvmd/nixos-raspberrypi/main";
     nix-openclaw.url = "github:MartinLoeper/nix-openclaw/main";
+    home-manager.url = "github:nix-community/home-manager/release-25.11";
+    home-manager.inputs.nixpkgs.follows = "nix-openclaw/nixpkgs";
   };
 
   nixConfig = {
@@ -13,7 +15,7 @@
     ];
   };
 
-  outputs = { self, nixos-raspberrypi, nix-openclaw, ... }:
+  outputs = { self, nixos-raspberrypi, nix-openclaw, home-manager, ... }:
     let
       commonModules = [
         {
@@ -23,79 +25,26 @@
             raspberry-pi-5.display-vc4
           ];
         }
-        nix-openclaw.nixosModules.openclaw-gateway
         {
           nixpkgs.overlays = [
             nix-openclaw.overlays.default
-            (final: prev: {
-              sdl3 = prev.sdl3.overrideAttrs (old: {
-                doCheck = false;
-              });
-            })
+            (import ./overlays/openclaw-gateway-fix.nix)
           ];
-          services.openclaw-gateway.enable = true;
         }
-        ({ pkgs, ... }: {
-          boot.loader.raspberry-pi.bootloader = "kernel";
-
-          fileSystems = {
-            "/" = {
-              device = "/dev/disk/by-label/NIXOS_SD";
-              fsType = "ext4";
-              options = [ "noatime" ];
-            };
-            "/boot/firmware" = {
-              device = "/dev/disk/by-label/FIRMWARE";
-              fsType = "vfat";
-              options = [ "noatime" "noauto" "x-systemd.automount" "x-systemd.idle-timeout=1min" ];
-            };
+        home-manager.nixosModules.home-manager
+        {
+          home-manager.useGlobalPkgs = true;
+          home-manager.useUserPackages = true;
+          home-manager.users.kiosk = {
+            imports = [
+              nix-openclaw.homeManagerModules.openclaw
+              ./home/openclaw.nix
+            ];
+            home.stateVersion = "25.05";
           };
-
-          networking.hostName = "openclaw-rpi5";
-
-          users.users.nixos = {
-            isNormalUser = true;
-            extraGroups = [ "wheel" ];
-          };
-
-          users.users.kiosk = {
-            isSystemUser = true;
-            group = "kiosk";
-            home = "/var/lib/kiosk";
-            createHome = true;
-            extraGroups = [ "video" ];
-          };
-          users.groups.kiosk = { };
-
-          hardware.graphics.enable = true;
-
-          services.avahi = {
-            enable = true;
-            nssmdns4 = true;
-            publish = {
-              enable = true;
-              addresses = true;
-            };
-          };
-
-          services.openssh = {
-            enable = true;
-            settings.PermitRootLogin = "yes";
-          };
-
-          security.sudo.wheelNeedsPassword = false;
-
-          specialisation.kiosk.configuration = {
-            services.cage = {
-              enable = true;
-              user = "kiosk";
-              program = "${pkgs.chromium}/bin/chromium --kiosk --no-first-run --disable-infobars --noerrdialogs --disable-session-crashed-bubble --disable-pinch --overscroll-history-navigation=0 http://localhost:18789";
-              environment.NIXOS_OZONE_WL = "1";
-            };
-          };
-
-          system.stateVersion = "25.05";
-        })
+        }
+        ./modules/base.nix
+        ./modules/kiosk.nix
       ];
 
       commonArgs = {
@@ -105,10 +54,20 @@
     in
     {
       # For ongoing deploys via nixos-rebuild (./deploy.sh)
-      nixosConfigurations.rpi5 = nixos-raspberrypi.lib.nixosSystemFull commonArgs;
+      nixosConfigurations.rpi5 = nixos-raspberrypi.lib.nixosSystem commonArgs;
 
       # For building flashable SD images (./build.sh)
-      nixosConfigurations.rpi5-installer = nixos-raspberrypi.lib.nixosInstaller commonArgs;
+      nixosConfigurations.rpi5-installer = nixos-raspberrypi.lib.nixosSystem {
+        specialArgs = commonArgs.specialArgs;
+        modules = commonArgs.modules ++ [
+          nixos-raspberrypi.nixosModules.sd-image
+          "${nixos-raspberrypi.inputs.nixpkgs}/nixos/modules/profiles/installation-device.nix"
+          {
+            boot.swraid.enable = nixos-raspberrypi.inputs.nixpkgs.lib.mkForce false;
+            installer.cloneConfig = false;
+          }
+        ];
+      };
 
       installerImages.rpi5 =
         self.nixosConfigurations.rpi5-installer.config.system.build.sdImage;

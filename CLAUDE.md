@@ -4,6 +4,7 @@
 
 - **Target device:** Raspberry Pi 5 reachable at `openclaw-rpi5.local` (mDNS)
 - **Deploy command:** `./scripts/deploy.sh`
+- **SSH user:** `nixos`
 - **SSH key:** `id_ed25519_rpi5` in repo root (gitignored), set up via `./scripts/setup-ssh.sh`
 
 ### "Deploy in background"
