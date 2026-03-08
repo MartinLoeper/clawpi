@@ -102,10 +102,10 @@ This builds the system locally and copies the closure to the Pi over SSH. The ge
 
 | Config | Builder | Purpose |
 |--------|---------|---------|
-| `nixosConfigurations.rpi5` | `nixosSystemFull` | Remote deploys via `nixos-rebuild` |
-| `nixosConfigurations.rpi5-installer` | `nixosInstaller` | Flashable SD card images |
+| `nixosConfigurations.rpi5` | `nixosSystem` | Remote deploys via `nixos-rebuild` |
+| `nixosConfigurations.rpi5-installer` | `nixosSystem` + sd-image | Flashable SD card images |
 
-Both share the same system configuration. `nixosSystemFull` includes RPi-optimized package overlays (FFmpeg, Kodi, VLC, libcamera, etc.) globally.
+Both share the same system configuration. We use `nixosSystem` (base) instead of `nixosSystemFull` to avoid RPi multimedia overlay rebuilds — see [docs/workarounds.md](docs/workarounds.md) for rationale.
 
 The [OpenClaw gateway](https://github.com/MartinLoeper/nix-openclaw) runs as a systemd service (`openclaw-gateway.service`) on port 18789, serving AI-generated dashboards. It is included in both configurations via `commonModules`. See [docs/openclaw.md](docs/openclaw.md) for details.
 
