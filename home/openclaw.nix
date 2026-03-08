@@ -1,6 +1,7 @@
 { pkgs, ... }: {
   programs.openclaw = {
     enable = true;
+    excludeTools = [ "uv" ];
     config = {
       gateway = {
         mode = "local";

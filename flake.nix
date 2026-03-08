@@ -29,7 +29,6 @@
           nixpkgs.overlays = [
             nix-openclaw.overlays.default
             (import ./overlays/openclaw-gateway-fix.nix)
-            (import ./overlays/uv-no-auditable.nix)
           ];
         }
         home-manager.nixosModules.home-manager
