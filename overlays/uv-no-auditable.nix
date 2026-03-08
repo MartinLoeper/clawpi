@@ -1,7 +1,7 @@
 final: prev: {
   uv = prev.uv.overrideAttrs (old: {
     nativeBuildInputs = builtins.filter
-      (dep: !(dep ? pname && dep.pname == "cargo-auditable-cargo-wrapper"))
+      (dep: !(builtins.match ".*auditable.*" (builtins.baseNameOf (builtins.toString dep)) != null))
       (old.nativeBuildInputs or []);
   });
 }
