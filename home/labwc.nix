@@ -22,9 +22,10 @@
         --no-first-run \
         --noerrdialogs \
         --disable-session-crashed-bubble \
-        --disable-pinch \
         --overscroll-history-navigation=0 \
         --remote-debugging-port=9222 \
+        --touch-events=enabled \
+        --enable-features=TouchpadOverscrollHistoryNavigation \
         http://localhost:3100 &
     '';
   };
