@@ -41,6 +41,7 @@
               nix-openclaw.homeManagerModules.openclaw
               ./home/openclaw.nix
               ./home/clawpi.nix
+              ./home/labwc.nix
             ];
             home.stateVersion = "25.05";
           };
