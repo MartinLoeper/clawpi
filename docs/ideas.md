@@ -361,3 +361,16 @@ ssh nixos@openclaw-rpi5.local "echo '<bot-token>' | sudo tee /var/lib/clawpi/tel
 
 # 4. Send a message to your bot — the agent responds!
 ```
+
+## Documentation Site (Docusaurus)
+
+Set up a proper documentation website using [Docusaurus](https://docusaurus.io/) (or a similar static site generator) so new users can get started quickly without reading raw Markdown files in the repo. The site should:
+
+- **Getting started guide** — step-by-step from "I have a Pi" to "agent is running on my display", with screenshots
+- **Architecture overview** — visual diagrams of how the pieces fit together (NixOS, OpenClaw, labwc, Chromium, Eww, plugins)
+- **Tool reference** — auto-generated or manually maintained docs for all `clawpi-tools` plugin tools (parameters, return values, examples)
+- **Configuration reference** — all NixOS module options, specialisations, and flake outputs explained
+- **Deployment guide** — local build, remote ARM build (Hetzner), SD image flashing, OTA updates
+- **Contributing** — how to add new tools, write skills, extend the kiosk, and submit PRs
+
+Host on GitHub Pages (free, auto-deploys from a `docs` branch or `/docs` folder via GitHub Actions). The current `docs/` Markdown files can serve as the content source — Docusaurus can consume them with minimal restructuring.
