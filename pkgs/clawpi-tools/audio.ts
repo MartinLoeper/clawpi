@@ -365,7 +365,11 @@ export default function (api: any) {
       "also generate speech with tts and play it via audio_play on the display speakers. " +
       "Continue doing this until the user tells you to stop.\n\n" +
       "The tts tool outputs an MP3 file path (e.g. /tmp/openclaw/tts-.../voice-*.mp3) — " +
-      "pass that path to this tool.",
+      "pass that path to this tool.\n\n" +
+      "Volume note: Some USB speakers don't use the full 0.0–1.0 range — " +
+      "e.g. the usable range may be 0.8–1.0 with everything below being silent. " +
+      "If the user reports no sound, try increasing the volume with audio_set_volume " +
+      "before assuming the speaker is broken.",
     parameters: Type.Object({
       path: Type.String({
         description:
