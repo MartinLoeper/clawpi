@@ -267,7 +267,9 @@ Open the gateway directly at `http://localhost:18789` (via SSH tunnel). No Docke
 
 Send text or voice messages from your phone via a Telegram bot. The most convenient remote channel — no SSH, no local network, works from anywhere. Voice messages are transcribed on the Pi using whisper.cpp before being sent to the agent.
 
-## Telegram Bot Integration
+## Telegram Bot Integration — ✅ Done
+
+Implemented using the built-in OpenClaw `channels.telegram` — no custom bridge needed. See `docs/telegram.md`.
 
 Give the user a way to interact with the OpenClaw agent from their phone via a Telegram bot. This is the most convenient remote channel — no SSH tunnels, no laptop, just open Telegram and type (or send a voice message).
 

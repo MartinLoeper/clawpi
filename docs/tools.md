@@ -13,6 +13,8 @@ ClawPi ships an OpenClaw plugin (`clawpi-tools`) that gives the agent hardware c
 | `audio_set_volume` | Audio | `level` (0.0–1.0) | Set volume of default sink |
 | `audio_test_tone` | Audio | `frequency?`, `duration?` | Play test sine wave (requires debug mode) |
 | `audio_set_default_sink` | Audio | `sink_id` | Switch default audio output by sink ID |
+| `screenshot_display` | Screenshot | — | Full compositor screenshot (grim) |
+| `screenshot_browser` | Screenshot | `format?`, `quality?` | Browser viewport screenshot (CDP) |
 
 ## Audio
 
@@ -69,13 +71,51 @@ Switch the default audio output to a different sink. Use `audio_status` first to
 
 **Returns:** Confirmation message.
 
+## Screenshots
+
+Two screenshot tools are available, each capturing a different layer of the display stack. Choose based on what you need:
+
+### When to use which
+
+| Use case | Tool | Why |
+|----------|------|-----|
+| "What does the user see on the monitor?" | `screenshot_display` | Captures the full physical output including Eww overlays |
+| "What web page is showing?" | `screenshot_browser` | Captures just the page content, clean and overlay-free |
+| Debugging Eww overlays | `screenshot_display` | Only way to see if overlays are rendering correctly |
+| Saving a dashboard to send/email | `screenshot_browser` | Clean capture without status indicators cluttering the image |
+| Checking if the browser loaded correctly | `screenshot_browser` | Directly accesses the browser viewport |
+
+### `screenshot_display`
+
+Capture the entire Wayland compositor output using `grim`. This is what the user physically sees on the connected monitor — the Chromium kiosk window **and** any Eww overlays (status indicator, OSD, etc.) rendered on top.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| *(none)* | | |
+
+**Returns:** PNG image of the full display.
+
+**How it works:** Runs `grim` with `WAYLAND_DISPLAY=wayland-0` to capture all layer-shell surfaces and windows composited by labwc.
+
+### `screenshot_browser`
+
+Capture the Chromium browser viewport via CDP (Chrome DevTools Protocol, port 9222). This captures **only** the web page content rendered inside the browser — Eww overlays and other compositor elements are **not** included.
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `format` | `"png"` \| `"jpeg"` | no | `"png"` | Image format |
+| `quality` | number | no | — | JPEG quality 0–100 (ignored for PNG) |
+
+**Returns:** Image in the requested format.
+
+**How it works:** Connects to Chromium's CDP WebSocket at `127.0.0.1:9222`, finds the first page target, and calls `Page.captureScreenshot`.
+
 ## Planned Tools
 
 See `docs/ideas.md` for tools under consideration:
 
 - **Display power** — turn the connected display on/off via `wlr-randr` or DDC/CI
 - **Display brightness** — adjust brightness via DDC/CI (`ddcutil`)
-- **Screenshot** — capture the full Wayland compositor output via `grim`
 - **Show choices** — Eww overlay for multi-option disambiguation, returns user selection
 - **Show message** — speech bubble Eww overlay with agent text
 - **Volume/brightness OSD** — Eww overlays when the agent adjusts hardware settings

@@ -13,9 +13,22 @@ Guide for developing the `clawpi-tools` OpenClaw plugin that gives the agent typ
 ```
 pkgs/clawpi-tools/
 ├── openclaw.plugin.json   # Plugin manifest (id, version, config schema)
-├── index.ts               # Tool registrations (loaded by gateway via jiti)
+├── index.ts               # Entry point — imports and registers all category modules
+├── helpers.ts             # Shared utilities (run, runWayland, text, image)
+├── audio.ts               # Audio tools (audio_*)
+├── screenshot.ts          # Screenshot tools (screenshot_*)
 └── package.nix            # Nix derivation
 ```
+
+### File-per-category convention
+
+**Each tool category lives in its own file.** The file is named after the category prefix (e.g. `audio.ts` for `audio_*` tools, `screenshot.ts` for `screenshot_*` tools). Each category file exports a default function that takes `api` and registers all tools for that category.
+
+When adding a new category:
+1. Create `<category>.ts` in `pkgs/clawpi-tools/`
+2. Export a default function: `export default function (api: any) { ... }`
+3. Import and call it from `index.ts`: `import registerFooTools from "./foo"; registerFooTools(api);`
+4. Import shared helpers from `./helpers` (never duplicate `run`, `text`, `image`, etc.)
 
 **Wiring files:**
 - `overlays/clawpi.nix` — adds `clawpi-tools` to the Nix package set
@@ -132,9 +145,13 @@ async function runWayland(cmd: string, args: string[]) {
 }
 ```
 
+## Documentation
+
+**Every time you add, remove, or change a tool**, update `docs/tools.md` to match. Keep the summary table, per-tool parameter tables, and "when to use which" guidance in sync with the actual implementation.
+
 ## Version bumping
 
-**Every time you change `index.ts`**, bump the version in **both**:
+**Every time you change any `.ts` file**, bump the version in **both**:
 1. `openclaw.plugin.json` — the `"version"` field
 2. `package.nix` — the `version` attribute
 
@@ -142,7 +159,7 @@ This is required because Nix derives the store path from the version. Without bu
 
 ## Deploy and test cycle
 
-1. Edit `index.ts`
+1. Edit the category file (e.g. `audio.ts`, `screenshot.ts`) or add a new one
 2. Bump version in `openclaw.plugin.json` and `package.nix`
 3. `git add pkgs/clawpi-tools/` (Nix needs files tracked to see them)
 4. Deploy: `FLAKE_ATTR=rpi5-telegram-debug ./scripts/deploy.sh 192.168.0.64 --specialisation kiosk`
@@ -180,17 +197,17 @@ Planned tools to add to this plugin:
 | `show_message` | Eww overlay | Show speech bubble overlay with agent message |
 | `show_osd` | Eww overlay | Show volume/brightness OSD bar |
 | `browser_mode` | Browser | Switch between kiosk (--app) and browse (--start-fullscreen) mode |
-| `screenshot` | Display | Take Wayland screenshot via grim |
-
 ## Existing tools (current)
 
-| Tool | Parameters | Description |
-|------|-----------|-------------|
-| `audio_status` | none | List PipeWire sinks/sources via `wpctl status` |
-| `audio_get_volume` | none | Get default sink volume |
-| `audio_set_volume` | `level: number (0.0–1.0)` | Set default sink volume |
-| `audio_test_tone` | `frequency?: number, duration?: number` | Play test sine wave |
-| `audio_set_default_sink` | `sink_id: number` | Switch default output by ID |
+| Tool | File | Parameters | Description |
+|------|------|-----------|-------------|
+| `audio_status` | `audio.ts` | none | List PipeWire sinks/sources via `wpctl status` |
+| `audio_get_volume` | `audio.ts` | none | Get default sink volume |
+| `audio_set_volume` | `audio.ts` | `level: number (0.0–1.0)` | Set default sink volume |
+| `audio_test_tone` | `audio.ts` | `frequency?: number, duration?: number` | Play test sine wave |
+| `audio_set_default_sink` | `audio.ts` | `sink_id: number` | Switch default output by ID |
+| `screenshot_display` | `screenshot.ts` | none | Full compositor screenshot via grim |
+| `screenshot_browser` | `screenshot.ts` | `format?, quality?` | Browser viewport screenshot via CDP |
 
 ## Gateway plugin config
 
