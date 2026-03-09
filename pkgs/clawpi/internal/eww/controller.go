@@ -46,9 +46,9 @@ func (c *Controller) SetState(state State) {
 	c.update("clawpi_state", string(state))
 
 	if state == StateIdle {
-		c.ewwCmd("close", "status-overlay")
+		go c.ewwCmd("close", "status-overlay")
 	} else if prev == StateIdle {
-		c.ewwCmd("open", "status-overlay")
+		go c.ewwCmd("open", "status-overlay")
 	}
 }
 
@@ -63,10 +63,10 @@ func (c *Controller) SetMessage(msg string) {
 func (c *Controller) SetTTSPlaying(playing bool) {
 	if playing {
 		c.update("clawpi_tts_playing", "true")
-		c.ewwCmd("open", "tts-stop-overlay")
+		go c.ewwCmd("open", "tts-stop-overlay")
 	} else {
 		c.update("clawpi_tts_playing", "false")
-		c.ewwCmd("close", "tts-stop-overlay")
+		go c.ewwCmd("close", "tts-stop-overlay")
 	}
 }
 
