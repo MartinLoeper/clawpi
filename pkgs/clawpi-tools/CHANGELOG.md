@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.1
+
+- Note in `tts_hq` description that the default voice speaks Schwäbisch
+
 ## 0.7.0
 
 - Add `tts_hq_voices` tool — search and list ElevenLabs voices by name, type, or labels

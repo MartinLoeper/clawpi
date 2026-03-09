@@ -429,6 +429,10 @@ export default function (api: any) {
       "Use this instead of the built-in tts tool when the user asks for " +
       "higher quality, more natural, or more expressive speech. " +
       "After generating, call audio_play with the returned path to play it.\n\n" +
+      `Voice note: The default voice (${ELEVENLABS_DEFAULT_VOICE}) speaks Schwäbisch ` +
+      "(Swabian German dialect). When using this voice or omitting the voice parameter, " +
+      "write the text in Schwäbisch for the most natural result. " +
+      "Use tts_hq_voices to find a different voice if standard German or another language is needed.\n\n" +
       "Requires services.clawpi.elevenlabs.enable = true in the NixOS config " +
       "and an API key provisioned via ./scripts/provision-elevenlabs.sh.",
     parameters: Type.Object({
