@@ -63,6 +63,12 @@ The deploy builds the NixOS closure locally (cross-compiled for aarch64) and cop
 - Skills (`.claude/skills/`) and CLAUDE.md must be **generic** — no user-specific paths, credentials, CLI wrappers, or machine-specific details.
 - User-specific information (e.g. custom CLI wrappers like `mloeper-hcloud`, SSH key names, server IPs) belongs in **dynamic Claude memory** (auto-memory `MEMORY.md`), not in checked-in files.
 
+## Go Packages
+
+- Go packages live in `pkgs/` (e.g. `pkgs/clawpi/`)
+- Build locally with `CGO_ENABLED=0 go build ./...` (no C compiler available on the dev machine)
+- Production builds are handled by Nix (`buildGoModule`) which provides the full toolchain
+
 ## NixOS Specifics
 
 - Bootloader: `"kernel"` (RPi kernel-based, supports generational rollback)

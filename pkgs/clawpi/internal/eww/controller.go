@@ -23,37 +23,12 @@ type Controller struct {
 	configDir string
 	mu        sync.Mutex
 	state     State
-	running   bool
 }
 
 func NewController(configDir string) *Controller {
 	return &Controller{
 		configDir: configDir,
 		state:     StateIdle,
-	}
-}
-
-func (c *Controller) StartDaemon() error {
-	// Kill any existing eww daemon first
-	c.ewwCmd("kill")
-
-	if err := c.ewwCmd("daemon"); err != nil {
-		return fmt.Errorf("start eww daemon: %w", err)
-	}
-	c.running = true
-	log.Println("eww daemon started")
-	return nil
-}
-
-func (c *Controller) OpenWindow(name string) {
-	if err := c.ewwCmd("open", name); err != nil {
-		log.Printf("eww open %s: %v", name, err)
-	}
-}
-
-func (c *Controller) CloseWindow(name string) {
-	if err := c.ewwCmd("close", name); err != nil {
-		log.Printf("eww close %s: %v", name, err)
 	}
 }
 
@@ -71,9 +46,9 @@ func (c *Controller) SetState(state State) {
 	c.update("clawpi_state", string(state))
 
 	if state == StateIdle {
-		c.CloseWindow("status-overlay")
+		c.ewwCmd("close", "status-overlay")
 	} else if prev == StateIdle {
-		c.OpenWindow("status-overlay")
+		c.ewwCmd("open", "status-overlay")
 	}
 }
 
@@ -83,17 +58,6 @@ func (c *Controller) SetToolName(name string) {
 
 func (c *Controller) SetMessage(msg string) {
 	c.update("clawpi_message", msg)
-}
-
-func (c *Controller) Shutdown() {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	if c.running {
-		c.ewwCmd("close", "status-overlay")
-		c.ewwCmd("kill")
-		c.running = false
-		log.Println("eww daemon stopped")
-	}
 }
 
 func (c *Controller) update(variable, value string) {

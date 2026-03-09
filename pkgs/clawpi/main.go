@@ -35,11 +35,6 @@ func main() {
 	}
 
 	ctrl := eww.NewController(ewwConfigDir)
-	if err := ctrl.StartDaemon(); err != nil {
-		log.Printf("eww: %v (overlays disabled)", err)
-	}
-
-	ctrl.SetState(eww.StateDisconnected)
 
 	client := gateway.NewClient(cfg.GatewayURL, cfg.Token)
 
@@ -74,7 +69,6 @@ func main() {
 		sig := <-sigCh
 		log.Printf("received %v, shutting down", sig)
 		ctrl.SetState(eww.StateIdle)
-		ctrl.Shutdown()
 		os.Exit(0)
 	}()
 

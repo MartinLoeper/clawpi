@@ -4,14 +4,34 @@
     pkgs.eww
   ];
 
+  # Eww daemon — runs independently, clawpi sends updates via the socket
+  systemd.user.services.eww = {
+    Unit = {
+      Description = "Eww widget daemon";
+      After = [ "graphical-session.target" ];
+      PartOf = [ "graphical-session.target" ];
+    };
+    Install.WantedBy = [ "graphical-session.target" ];
+    Service = {
+      Type = "simple";
+      ExecStart = "${pkgs.eww}/bin/eww daemon --config ${pkgs.clawpi}/share/clawpi/eww --no-daemonize";
+      Restart = "on-failure";
+      RestartSec = "3s";
+    };
+  };
+
   systemd.user.services.clawpi = {
     Unit = {
       Description = "ClawPi overlay daemon";
       After = [
         "openclaw-gateway.service"
+        "eww.service"
         "graphical-session.target"
       ];
-      Wants = [ "openclaw-gateway.service" ];
+      Wants = [
+        "openclaw-gateway.service"
+        "eww.service"
+      ];
       PartOf = [ "graphical-session.target" ];
     };
     Install.WantedBy = [ "graphical-session.target" ];
