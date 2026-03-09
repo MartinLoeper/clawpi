@@ -71,44 +71,55 @@ The agent receives the voice command as if the user typed it, and can respond wi
 
 ## NixOS Integration
 
-### New module: `modules/voice.nix`
+### Module: `modules/voice.nix`
 
 ```nix
-# Conceptual structure — not final Nix code
-{
-  # System packages
-  environment.systemPackages = [
-    whisper-cpp          # pkgs.openai-whisper-cpp
-    # openWakeWord       # custom derivation (Python + ONNX Runtime)
-  ];
+services.clawpi.voice = {
+  enable = true;
 
-  # Voice pipeline service (runs as kiosk user)
-  systemd.user.services.voice-pipeline = {
-    description = "OpenClaw voice pipeline (hotword + STT)";
-    after = [ "pipewire.service" "openclaw-gateway.service" ];
-    wantedBy = [ "default.target" ];
-    serviceConfig = {
-      ExecStart = "...";  # Python script orchestrating the pipeline
-      Restart = "always";
-    };
-  };
-}
+  # Path to a custom wake word .tflite model (null = bundled "hey jarvis")
+  wakewordModel = ./models/hey_claw.tflite;
+
+  # Detection threshold 0.0–1.0 (lower = more sensitive)
+  threshold = 0.5;
+
+  # Seconds of silence before stopping speech recording
+  silenceTimeout = 3.0;
+
+  # Maximum recording duration in seconds
+  maxRecordSeconds = 15.0;
+};
 ```
+
+### Home Manager: `home/voice.nix`
+
+The `clawpi-voice-pipeline` systemd user service runs after PipeWire and the gateway. It auto-restarts on failure. The gateway token is loaded from the same env file used by the gateway itself.
+
+### File structure
+
+| File | Purpose |
+|------|---------|
+| `pkgs/voice-pipeline/voice-pipeline.py` | Python orchestrator (PipeWire → openWakeWord → whisper → gateway) |
+| `pkgs/voice-pipeline/package.nix` | Nix package wrapping the script with all dependencies |
+| `pkgs/voice-pipeline/openwakeword.nix` | openWakeWord v0.6.0 package with pre-fetched models |
+| `modules/voice.nix` | NixOS options (`services.clawpi.voice.*`) |
+| `home/voice.nix` | Home Manager systemd user service |
 
 ### Hardware requirements
 
 - **USB microphone** — any class-compliant USB mic works with PipeWire out of the box
-- **Recommended:** ReSpeaker USB Mic Array (has onboard VAD LED, good far-field pickup)
-- The mic should be listed in `modules/base.nix` hardware description / agent personality
+- **Note:** The Pi's USB speaker bar mic (MZ-631M) works but has very low hardware gain (0–0.39dB range). Far-field pickup is poor — consider a dedicated USB mic with better gain.
+- **Recommended:** ReSpeaker USB Mic Array (onboard VAD LED, good far-field pickup)
 
 ### Packaging plan
 
-| Component | Nixpkgs status | Action needed |
-|-----------|---------------|---------------|
-| whisper.cpp | In nixpkgs (`openai-whisper-cpp`) | Use directly |
-| openWakeWord | Not in nixpkgs | Package as flake input or `python3.withPackages` derivation |
-| ONNX Runtime | In nixpkgs (`onnxruntime`) | Dependency of openWakeWord |
-| Custom "hey claw" model | N/A | Train + include as a static asset in the flake |
+| Component | Status | Details |
+|-----------|--------|---------|
+| whisper.cpp | ✅ In nixpkgs | Used via `whisper-cpp` package |
+| openWakeWord | ✅ Packaged | `pkgs/voice-pipeline/openwakeword.nix` (v0.6.0, wheel, pre-fetched models) |
+| ONNX Runtime | ✅ In nixpkgs | Dependency of openWakeWord |
+| ai-edge-litert | ✅ In nixpkgs | TFLite runtime, dependency of openWakeWord |
+| Custom "hey claw" model | ❌ Not yet | Train + include as a static asset (see Training section) |
 
 ## Pipeline Orchestrator
 
@@ -130,13 +141,65 @@ A Python script (`voice-pipeline.py`) ties everything together:
 
 **Silence detection:** Use Silero VAD or simple RMS energy threshold to detect end-of-speech. This avoids running whisper.cpp on silence and gives a natural "I'm done talking" boundary.
 
+## Training a Custom Wake Word Model
+
+The bundled "hey jarvis" model works out of the box. To train a custom "hey claw" model:
+
+### Approach 1: Synthetic training (recommended to start)
+
+openWakeWord's training pipeline generates synthetic samples from text using TTS, then augments them with noise/reverb/pitch to create a robust dataset.
+
+1. **Clone openWakeWord** on your dev machine (x86_64):
+   ```sh
+   git clone https://github.com/dscripka/openWakeWord
+   cd openWakeWord
+   pip install -e ".[training]"
+   ```
+
+2. **Generate synthetic data** using the provided Jupyter notebook or scripts:
+   - Positive samples: TTS-synthesized "hey claw" with varied voices/accents (Piper, Google TTS, etc.)
+   - Negative samples: general speech from LibriSpeech or similar datasets
+   - Automatic augmentation: background noise, reverb, room simulation, pitch shifting
+
+3. **Train the model** (~30min on CPU):
+   ```sh
+   python -m openwakeword.train --positive_data hey_claw_positive/ \
+     --negative_data negative_samples/ --output_dir models/
+   ```
+
+4. **Output:** a `.tflite` file (~50KB)
+
+### Approach 2: Real-voice training (better accuracy)
+
+Record 50+ real samples of "hey claw" from different speakers, distances, and volumes. Mix with synthetic data for best results.
+
+**Recording tips:**
+- Vary distance: 0.5m, 1m, 2m, 3m from the mic
+- Vary tone: normal, whisper, loud, tired, excited
+- Vary speakers: different people if possible
+- Record in the actual environment (ambient noise helps generalization)
+
+### Deploying the model
+
+Add the trained model to the NixOS config:
+
+```nix
+services.clawpi.voice = {
+  enable = true;
+  wakewordModel = ./models/hey_claw.tflite;
+  threshold = 0.5;  # Tune: lower = more sensitive, higher = fewer false positives
+};
+```
+
+The model file will be included in the Nix store and passed to openWakeWord at runtime.
+
 ## Implementation Phases
 
 ### Phase 1: Basic pipeline (MVP)
-- [ ] Package openWakeWord for NixOS (Python derivation)
+- [x] Package openWakeWord for NixOS (Python derivation)
 - [ ] Train custom "hey claw" wake word model
-- [ ] Write pipeline orchestrator script
-- [ ] NixOS module with systemd service
+- [x] Write pipeline orchestrator script
+- [x] NixOS module with systemd service
 - [ ] Test with USB mic on RPi 5
 
 ### Phase 2: Polish
@@ -155,7 +218,7 @@ A Python script (`voice-pipeline.py`) ties everything together:
 
 ## Open Questions
 
-1. **Mic recommendation:** Which USB mic gives the best far-field performance for the price? ReSpeaker is popular but there may be better options.
+1. **Mic recommendation:** The USB speaker bar mic (MZ-631M) has very low hardware gain (0–0.39dB). A dedicated USB mic with better gain would improve far-field detection. ReSpeaker USB Mic Array is a popular option.
 2. **Wake word false positives:** Two-syllable "hey claw" should have a low false positive rate. If still too trigger-happy, "open claw" is an alternative.
 3. **Concurrent resource usage:** whisper.cpp uses all 4 Cortex-A76 cores during transcription. Will this cause browser jank? May need to pin whisper to 2 cores via `taskset`.
 4. **PipeWire routing:** Need to ensure the USB mic is the default capture device and doesn't conflict with browser audio playback.

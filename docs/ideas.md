@@ -1,12 +1,8 @@
 # Ideas
 
-## Seeded Agent Personality
+## Seeded Agent Personality — ✅ Done
 
-Inject hardware-aware context into the agent's system prompt so it understands its physical environment and capabilities. Example:
-
-> You are running on a Raspberry Pi 5B with a 10-inch display attached directly. You are able to control the Chromium browser which is opened in kiosk mode on it. Your job is to assist the user in controlling that browser — navigating pages, interacting with web apps, displaying dashboards, and anything else visible on the screen.
-
-This makes the agent aware of its embodiment and encourages it to proactively use the browser tool rather than just answering questions abstractly.
+Implemented via `documents/AGENTS.md` which is injected into the agent's system prompt. Contains hardware-aware context, canvas workspace instructions, and audio device awareness.
 
 ## Attached Hardware
 
@@ -189,35 +185,25 @@ Teach the agent to:
 - **Datadog dashboards** — design and build monitoring dashboards via the Datadog UI in the kiosk browser, arranging widgets, setting queries, and configuring alerts visually.
 - **Excalidraw diagrams** — draw architecture diagrams, flowcharts, and whiteboard sketches directly in Excalidraw running in the kiosk browser, using the browser tool to interact with the canvas.
 
-## Text-to-Speech
+## Text-to-Speech — ✅ Done
 
-**Note:** OpenClaw core already includes a built-in TTS tool (`tts.enable`, `tts.providers`). Before building a custom solution, investigate whether the built-in TTS can be configured with a local backend (e.g. KittenTTS or Piper) so the agent can speak through the Pi's audio output natively.
+Implemented using ElevenLabs cloud TTS via the `tts_hq` plugin tool in `clawpi-tools`. The agent can speak through the Pi's HDMI audio output. Includes a stop button overlay (Eww) to cancel playback. Configured via `services.clawpi.elevenlabs`.
 
-If a custom approach is still needed, [KittenTTS](https://pypi.org/project/kittentts/) is a lightweight ONNX-based engine that should run on the RPi 5. Integrate as a `speak` tool that synthesizes text, writes a WAV file, and plays it via `pw-play` through the default PipeWire sink.
+Local TTS (KittenTTS or Piper) remains an option for offline/low-latency use in the future.
 
-## Audio I/O (Priority: STT first)
+## Audio I/O (Priority: STT first) — ✅ Partially Done
 
-**Speech-to-text is the top priority.** The user is far more comfortable speaking aloud than typing, and can easily read agent responses on the display — so TTS is nice-to-have but not critical.
+**Speech-to-text:** ✅ Implemented. Whisper.cpp runs locally on the Pi with Groq cloud fallback. Configured via `services.clawpi.audio`. See `docs/speech-to-text.md`.
 
-- **STT (high priority):** Run Whisper (or whisper.cpp for ARM efficiency) locally on the Pi to transcribe user speech into text for the agent. Needs a USB microphone and a wake-word or push-to-talk trigger.
-- **Hotword detection (research needed):** Would be awesome to have an always-on wake word (e.g. "Hey OpenClaw") so the user can just speak without pressing a button. Needs research — running Whisper continuously on an RPi 5 may be too heavy. Alternatives: lightweight hotword engines like openWakeWord, Porcupine, or Snowboy for the trigger, then hand off to Whisper for the actual transcription.
-- **TTS (lower priority):** Agent responses can be displayed on screen (via Eww overlay or browser). Audio output via PipeWire is available for when TTS is added later.
-- Tools: `pw-record`/`pw-play`, whisper.cpp, browser Web Audio APIs.
+**Hotword detection:** 🔧 In progress. openWakeWord packaged for NixOS, pipeline orchestrator written, NixOS module created. Needs custom "hey claw" model training and on-device testing. See `docs/voice-pipeline.md`.
 
-## Audio Transcription Tool (`audio_transcribe`)
+**TTS:** ✅ Implemented. ElevenLabs cloud TTS via the `tts_hq` tool, with a stop button overlay (Eww). Configured via `services.clawpi.elevenlabs`.
 
-Give the agent an `audio_transcribe` tool that records from the microphone and transcribes the audio locally using whisper.cpp. This combines the existing `audio_record` tool with a transcription step — record N seconds, pipe the WAV through `whisper-cli`, and return the text.
+## Audio Transcription Tool (`audio_transcribe`) — ✅ Done
 
-This enables the agent to listen to the user on demand ("what did I just say?", "listen for 10 seconds and tell me what you hear") without requiring a persistent voice pipeline or wake word. The agent decides when to listen based on conversation context.
+Implemented as part of the OpenClaw gateway's `tools.media.audio` configuration. Audio transcription is handled by a whisper wrapper script that tries Groq cloud first (if enabled) and falls back to local whisper.cpp. Configured via `services.clawpi.audio` in `modules/clawpi.nix`, wired in `home/openclaw.nix`.
 
-**Implementation:**
-1. Record via `pw-record` (already in `audio_record`)
-2. Run `whisper-cli -m <model> -l <lang> --no-gpu <wav-file>` on the recording
-3. Return the transcription text
-
-**Dependencies:** `whisper-cpp` and the whisper model are already installed when `services.clawpi.audio.enable = true`. The tool should check if whisper is available and return a clear error if not.
-
-**Difference from the voice pipeline:** The voice pipeline (hotword → continuous STT) is an always-on input channel. This tool is on-demand — the agent explicitly chooses to listen, making it useful for one-off tasks like "record what I say and summarize it" or "transcribe the ambient conversation".
+The voice pipeline (hotword → continuous STT) is a separate always-on input channel — see `docs/voice-pipeline.md`.
 
 ## File Transfer Channel
 
