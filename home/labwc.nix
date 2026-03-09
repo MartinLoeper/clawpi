@@ -22,7 +22,7 @@
         --no-first-run \
         --noerrdialogs \
         --disable-session-crashed-bubble \
-        --overscroll-history-navigation=0 \
+        --overscroll-history-navigation=1 \
         --remote-debugging-port=9222 \
         --touch-events=enabled \
         --enable-features=TouchpadOverscrollHistoryNavigation \
