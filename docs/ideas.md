@@ -39,6 +39,12 @@ Highlight in the README that we use NixOS for fully reproducible deployments —
 
 This is a real differentiator vs. Raspberry Pi projects that rely on manual `apt install` and can't reproduce their setup.
 
+## README: Commercial Use Case / PoC Positioning
+
+Position ClawPi as a proof of concept for a new generation of AI-powered smart assistant dashboards. The idea: sell touchscreen appliances to customers who want to build their own operational dashboards for SaaS software that exposes APIs to its data. Instead of building custom UIs, customers just talk to the display and the AI agent builds dashboards on the fly from the SaaS API.
+
+Be upfront that Raspberry Pi hardware is great for prototyping but likely not the right choice for production IoT deployments (reliability, supply chain, enterprise support). We'll add links to proper production-grade hardware platforms (e.g. industrial ARM SBCs, thin clients) once we've evaluated options.
+
 ## Project Name
 
 ~~Find a proper name for the project.~~ ✅ **Done** — the project is now called **ClawPi**.
