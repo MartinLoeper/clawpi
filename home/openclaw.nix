@@ -133,6 +133,7 @@ in
   programs.openclaw = {
     enable = true;
     package = pkgs.openclaw-gateway;
+    documents = ../../documents;
     skills = lib.optionals skillsCfg.enable [
       {
         name = "video-watcher";
