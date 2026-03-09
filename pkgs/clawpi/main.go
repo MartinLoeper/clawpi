@@ -9,6 +9,7 @@ import (
 	"clawpi/internal/config"
 	"clawpi/internal/eww"
 	"clawpi/internal/gateway"
+	"clawpi/internal/web"
 )
 
 func main() {
@@ -57,6 +58,13 @@ func main() {
 			ctrl.SetState(eww.StateDisconnected)
 		}
 	}
+
+	// Start web server
+	go func() {
+		if err := web.Serve(cfg.WebAddr); err != nil {
+			log.Fatalf("web server: %v", err)
+		}
+	}()
 
 	// Graceful shutdown
 	sigCh := make(chan os.Signal, 1)

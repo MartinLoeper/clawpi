@@ -9,7 +9,7 @@
         sleep 1
       done
 
-      # Chromium kiosk pointing at OpenClaw gateway
+      # Chromium kiosk pointing at ClawPi landing page
       ${pkgs.chromium}/bin/chromium \
         --kiosk \
         --no-first-run \
@@ -18,7 +18,7 @@
         --disable-pinch \
         --overscroll-history-navigation=0 \
         --remote-debugging-port=9222 \
-        http://localhost:18789 &
+        http://localhost:3100 &
     '';
   };
 

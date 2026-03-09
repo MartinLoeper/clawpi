@@ -9,6 +9,7 @@ import (
 type Config struct {
 	GatewayURL string
 	Token      string
+	WebAddr    string
 }
 
 func Load() (*Config, error) {
@@ -44,8 +45,14 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("no gateway token found (set OPENCLAW_GATEWAY_TOKEN, CLAWPI_TOKEN, or CLAWPI_TOKEN_FILE)")
 	}
 
+	webAddr := os.Getenv("CLAWPI_WEB_ADDR")
+	if webAddr == "" {
+		webAddr = ":3100"
+	}
+
 	return &Config{
 		GatewayURL: gatewayURL,
 		Token:      token,
+		WebAddr:    webAddr,
 	}, nil
 }
