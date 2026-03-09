@@ -97,6 +97,30 @@ To read config (requires root since kiosk home is restricted):
 ssh -i id_ed25519_rpi5 nixos@<host> "sudo cat /var/lib/kiosk/.openclaw/openclaw.json"
 ```
 
+## Send a message to the agent (CLI)
+
+Run a single agent turn via the CLI. Useful for debugging — the `--json` output shows which tools were called, token usage, session ID, and the full agent response.
+
+**Important:** The `OPENCLAW_GATEWAY_TOKEN` env var must be passed to authenticate with the running gateway. Read it from the token file on the Pi.
+
+```sh
+# On the Pi (via SSH):
+TOKEN=$(sudo cat /var/lib/kiosk/.openclaw/gateway-token.env | grep -oP 'OPENCLAW_GATEWAY_TOKEN=\K.*')
+sudo -u kiosk XDG_RUNTIME_DIR=/run/user/$(id -u kiosk) OPENCLAW_GATEWAY_TOKEN=$TOKEN \
+  openclaw agent --agent main --message "your message here" --json
+```
+
+The `--json` response includes:
+- `result.payloads[].text` — the agent's text response
+- `result.meta.agentMeta.usage` — token usage (input, output, cache)
+- `result.meta.agentMeta.model` — which model was used
+- `result.meta.agentMeta.sessionId` — session ID for follow-up messages
+- `result.meta.systemPromptReport.tools.entries` — all tools available to the agent with schema sizes
+
+Without `--json`, only a one-word status (`completed`) is printed.
+
+**Note:** This creates a standalone CLI session — the response is **not** delivered to Telegram or other channels. It's purely for debugging and testing tool invocations.
+
 ## Tool invoke HTTP API
 
 Test registered plugin tools directly via the gateway's HTTP API:
