@@ -1,16 +1,47 @@
 # Speech-to-Text
 
-## Current Implementation (whisper.cpp)
+## Overview
 
-Local audio transcription using [whisper.cpp](https://github.com/ggerganov/whisper.cpp) on the Pi. The gateway's media understanding subsystem reads `tools.media.audio.models` from the config and invokes whisper-cli for voice messages.
+Audio transcription supports two backends:
 
-### How It Works
+1. **Groq cloud** (optional) — whisper-large-v3-turbo via Groq API, near-instant (~216x real-time), best accuracy
+2. **Local whisper.cpp** (always available) — runs on-device, no internet needed
+
+When Groq is enabled, it's tried first. If it fails (network error, missing key, API issue), the wrapper automatically falls back to local whisper.cpp. This gives you cloud-quality transcription with offline resilience.
 
 ```
-Telegram voice message → Gateway downloads .ogg → ffmpeg converts → whisper-cli transcribes → text fed to agent
+Telegram voice message → Gateway downloads .ogg
+  → [Groq enabled?] → curl to Groq API (sends .ogg directly) → text
+  → [Groq failed or disabled] → ffmpeg converts to WAV → whisper-cli transcribes → text
+  → text fed to agent
 ```
 
-The gateway passes the audio file path via `{{MediaPath}}` template substitution in the args. whisper-cli outputs the transcript to stdout (with `-np` for clean output).
+## Groq Cloud Transcription
+
+### Quick Start
+
+1. Get an API key from [console.groq.com/keys](https://console.groq.com/keys)
+2. Provision on the Pi: `./scripts/provision-groq.sh [host]`
+3. Enable in NixOS config:
+   ```nix
+   services.clawpi.audio.enable = true;
+   services.clawpi.audio.groq.enable = true;
+   ```
+4. Deploy: `./scripts/deploy.sh [host] --specialisation kiosk`
+
+### NixOS Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `services.clawpi.audio.groq.enable` | bool | `false` | Enable Groq cloud transcription with local fallback |
+| `services.clawpi.audio.groq.apiKeyFile` | path | `/var/lib/clawpi/groq-api-key` | Path to the Groq API key file |
+| `services.clawpi.audio.groq.model` | string | `"whisper-large-v3-turbo"` | Groq transcription model |
+
+Groq supports .ogg/opus natively — no ffmpeg conversion needed. The API key is read at transcription time from the file, so you can rotate it without restarting the gateway.
+
+## Local whisper.cpp
+
+The gateway passes the audio file path via `{{MediaPath}}` template substitution in the args. The wrapper script handles backend selection, format conversion, and Eww overlay updates.
 
 ### NixOS Options
 
@@ -69,14 +100,12 @@ When `audio.enable = true`, these packages are added:
 - `whisper-cpp` — transcription engine
 - `file` — MIME type detection (used by gateway)
 - `ffmpeg-headless` — audio format conversion (Telegram sends .ogg/opus)
+- `curl` — Groq API calls (only when `audio.groq.enable = true`)
 
 ### Files
 
 - `modules/clawpi.nix` — NixOS options + system packages
-- `home/openclaw.nix` — ExecStartPre config patch + whisper model wiring
+- `home/openclaw.nix` — ExecStartPre config patch + whisper wrapper with Groq/local logic
 - `pkgs/whisper-model.nix` — fetches GGML model from HuggingFace
 - `overlays/clawpi.nix` — exposes `whisper-model` package
-
-## Future: Groq Cloud Transcription
-
-A Groq API key is provisioned on the Pi at `/var/lib/clawpi/groq-api-key`. Once the nix-openclaw schema is updated to expose `tools.media.audio.models` as a typed option, Groq can be added as an alternative provider alongside or instead of local whisper.
+- `scripts/provision-groq.sh` — provisions Groq API key on the Pi

@@ -72,8 +72,11 @@ Speech-to-text via whisper.cpp for Telegram voice messages and future voice inpu
 | `services.clawpi.audio.model` | enum | `"tiny"` | Whisper model size: `"tiny"` (fast, default), `"base"` (balanced), `"small"` (slow, best accuracy) |
 | `services.clawpi.audio.language` | string | `"auto"` | Spoken language code (e.g. `"en"`, `"de"`) or `"auto"` for auto-detect |
 | `services.clawpi.audio.timeoutSeconds` | int | `60` | Timeout in seconds for transcription |
+| `services.clawpi.audio.groq.enable` | bool | `false` | Enable Groq cloud transcription (whisper-large-v3-turbo) with local fallback |
+| `services.clawpi.audio.groq.apiKeyFile` | path | `/var/lib/clawpi/groq-api-key` | Path to Groq API key file. Provision with `./scripts/provision-groq.sh` |
+| `services.clawpi.audio.groq.model` | string | `"whisper-large-v3-turbo"` | Groq transcription model |
 
-When enabled, installs `whisper-cpp`, `ffmpeg`, and `file` utilities. The gateway's `ExecStartPre` patches `openclaw.json` to configure the whisper-cli transcription model.
+When enabled, installs `whisper-cpp`, `ffmpeg`, and `file` utilities (plus `curl` when Groq is enabled). The gateway's `ExecStartPre` patches `openclaw.json` to configure the transcription wrapper. When Groq is enabled, the wrapper tries Groq API first and falls back to local whisper.cpp on failure.
 
 ## Overlay Daemon
 

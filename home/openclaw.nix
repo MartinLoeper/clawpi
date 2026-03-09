@@ -1,19 +1,15 @@
 { pkgs, osConfig, lib, ... }:
 let
   audioCfg = osConfig.services.clawpi.audio;
+  groqCfg = osConfig.services.clawpi.audio.groq;
   debugCfg = osConfig.services.clawpi.debug;
   tgCfg = osConfig.services.clawpi.telegram;
 
   whisperModel = pkgs.whisper-model.override { model = audioCfg.model; };
 
-  # Wrapper that converts any audio format to WAV (16kHz mono) before
-  # passing it to whisper-cli.  Telegram sends .ogg/opus which whisper-cli
-  # cannot read directly.
-  whisperWrapper = pkgs.writeShellScript "whisper-transcribe" ''
-    input="$1"
+  # Local transcription: convert to WAV then run whisper-cli
+  localTranscribe = ''
     wav="''${input%.*}.wav"
-    # Show transcribing indicator (ignore errors if eww isn't running)
-    ${pkgs.eww}/bin/eww update clawpi_state=transcribing 2>/dev/null || true
     ${pkgs.ffmpeg-headless}/bin/ffmpeg -y -i "$input" -ar 16000 -ac 1 -c:a pcm_s16le "$wav" 2>/dev/null
     ${pkgs.whisper-cpp}/bin/whisper-cli \
       -m "${whisperModel}" \
@@ -22,6 +18,41 @@ let
       "$wav" 2>/dev/null
     rc=$?
     ${pkgs.coreutils}/bin/rm -f "$wav"
+  '';
+
+  # Groq cloud transcription: send audio directly (supports .ogg natively)
+  groqTranscribe = ''
+    groq_key=""
+    if [ -f "${toString groqCfg.apiKeyFile}" ]; then
+      groq_key="$(${pkgs.coreutils}/bin/cat "${toString groqCfg.apiKeyFile}")"
+    fi
+    if [ -n "$groq_key" ]; then
+      groq_result="$(${pkgs.curl}/bin/curl -sf \
+        --max-time ${toString audioCfg.timeoutSeconds} \
+        https://api.groq.com/openai/v1/audio/transcriptions \
+        -H "Authorization: Bearer $groq_key" \
+        -F "file=@$input" \
+        -F "model=${groqCfg.model}" \
+        -F "response_format=text"${lib.optionalString (audioCfg.language != "auto") ''
+        -F "language=${audioCfg.language}"''} 2>/dev/null)" && \
+      [ -n "$groq_result" ] && {
+        echo "$groq_result"
+        rc=0
+      }
+    fi
+  '';
+
+  # Wrapper that transcribes audio. Tries Groq first (if enabled), falls back to local whisper.
+  whisperWrapper = pkgs.writeShellScript "whisper-transcribe" ''
+    input="$1"
+    rc=1
+    # Show transcribing indicator (ignore errors if eww isn't running)
+    ${pkgs.eww}/bin/eww update clawpi_state=transcribing 2>/dev/null || true
+    ${lib.optionalString groqCfg.enable groqTranscribe}
+    # Fall back to local whisper-cli if Groq failed or is disabled
+    if [ "$rc" -ne 0 ]; then
+      ${localTranscribe}
+    fi
     # Clear indicator (the clawpi daemon will take over with "thinking" once the agent starts)
     ${pkgs.eww}/bin/eww update clawpi_state=idle 2>/dev/null || true
     exit $rc

@@ -55,6 +55,25 @@ in
         default = 60;
         description = "Timeout in seconds for transcription.";
       };
+
+      groq = {
+        enable = lib.mkEnableOption "Groq cloud transcription (whisper-large-v3-turbo) with local fallback";
+
+        apiKeyFile = lib.mkOption {
+          type = lib.types.path;
+          default = "/var/lib/clawpi/groq-api-key";
+          description = ''
+            Path to a file containing the Groq API key.
+            Provision with: ./scripts/provision-groq.sh
+          '';
+        };
+
+        model = lib.mkOption {
+          type = lib.types.str;
+          default = "whisper-large-v3-turbo";
+          description = "Groq transcription model.";
+        };
+      };
     };
 
     telegram = {
@@ -150,7 +169,8 @@ in
       environment.systemPackages = [ pkgs.alsa-utils ];
     }
     (lib.mkIf cfg.audio.enable {
-      environment.systemPackages = [ pkgs.whisper-cpp pkgs.file pkgs.ffmpeg-headless ];
+      environment.systemPackages = [ pkgs.whisper-cpp pkgs.file pkgs.ffmpeg-headless ]
+        ++ lib.optionals cfg.audio.groq.enable [ pkgs.curl ];
     })
   ];
 }
