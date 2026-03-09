@@ -36,7 +36,7 @@ let
     configFile="$HOME/.openclaw/openclaw.json"
     if [ -f "$configFile" ]; then
       ${pkgs.jq}/bin/jq -s '.[0] * .[1]' "$configFile" "${whisperMediaConfigFile}" > "$configFile.tmp" \
-        && mv "$configFile.tmp" "$configFile"
+        && ${pkgs.coreutils}/bin/mv "$configFile.tmp" "$configFile"
     fi
   '';
 
