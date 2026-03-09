@@ -43,6 +43,10 @@ Teach the agent to:
 - **Datadog dashboards** — design and build monitoring dashboards via the Datadog UI in the kiosk browser, arranging widgets, setting queries, and configuring alerts visually.
 - **Excalidraw diagrams** — draw architecture diagrams, flowcharts, and whiteboard sketches directly in Excalidraw running in the kiosk browser, using the browser tool to interact with the canvas.
 
-## Audio I/O
+## Audio I/O (Priority: STT first)
 
-Teach the agent to use the microphone and speakers attached to the Pi via PipeWire. This enables voice interaction, playing audio feedback, text-to-speech, or listening for voice commands. The agent should know how to use tools like `arecord`/`aplay`, `pw-play`/`pw-record`, or browser Web Audio APIs to capture and produce sound.
+**Speech-to-text is the top priority.** The user is far more comfortable speaking aloud than typing, and can easily read agent responses on the display — so TTS is nice-to-have but not critical.
+
+- **STT (high priority):** Run Whisper (or whisper.cpp for ARM efficiency) locally on the Pi to transcribe user speech into text for the agent. Needs a USB microphone and a wake-word or push-to-talk trigger.
+- **TTS (lower priority):** Agent responses can be displayed on screen (via Eww overlay or browser). Audio output via PipeWire is available for when TTS is added later.
+- Tools: `pw-record`/`pw-play`, whisper.cpp, browser Web Audio APIs.
