@@ -2,6 +2,7 @@
   home.packages = [
     pkgs.clawpi
     pkgs.eww
+    pkgs.grim  # Wayland screenshot tool (captures full compositor output incl. Eww overlays)
   ];
 
   # Eww daemon — runs independently, clawpi sends updates via the socket

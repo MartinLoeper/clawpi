@@ -106,15 +106,53 @@ nix-copy-closure --to nixos@<pi-host> $(readlink -f result)
 ssh nixos@<pi-host> sudo $(readlink -f result)/bin/switch-to-configuration switch
 ```
 
-## Tear down
+## Server lifecycle management
 
-Don't forget to delete the server when done:
+Hetzner bills running servers by the hour. To save costs, **pause (power off) the server** when it is not actively being used for builds or as a remote build cache.
+
+### Check server status
+
+```sh
+hcloud server list -o columns=name,status,ipv4
+```
+
+### Resume a stopped server
+
+```sh
+hcloud server poweron openclaw-builder
+```
+
+Wait for the server to come up before using it (takes ~10–30 seconds). Verify with:
+
+```sh
+ssh -o ConnectTimeout=5 root@<server-ip> echo ok
+```
+
+### Stop (pause) the server
+
+```sh
+hcloud server poweroff openclaw-builder
+```
+
+A stopped server retains its disk and IP but incurs no compute charges (only minimal storage cost).
+
+### When to ask the user
+
+After a build completes or a deploy finishes that used the server as a remote cache, **ask the user** whether they want to stop the server to save costs. Example prompt:
+
+> The Hetzner build server is still running. Would you like me to stop it to save costs? You can resume it later when needed.
+
+Do **not** stop or delete the server without confirmation — the user may want to keep it running for follow-up builds.
+
+### Tear down (permanent)
+
+If the server is no longer needed at all, delete it:
 
 ```sh
 hcloud server delete openclaw-builder
 ```
 
-Hetzner bills by the hour, so delete promptly after use.
+Only suggest deletion if the user explicitly says they are done with the server for good.
 
 ## Why this exists
 

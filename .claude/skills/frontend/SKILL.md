@@ -23,11 +23,20 @@ ssh nixos@<host> "sudo -u kiosk XDG_RUNTIME_DIR=/run/user/\$(id -u kiosk) eww --
 ssh nixos@<host> "sudo -u kiosk XDG_RUNTIME_DIR=/run/user/\$(id -u kiosk) eww --config <config-dir> get <variable>"
 ```
 
-Combine the CDP screenshot with Eww window/anchor info to reason about the full composite display. For a true full-screen capture including all layers, use a Wayland screenshot tool (e.g. `grim`) on the Pi.
+Combine the CDP screenshot with Eww window/anchor info to reason about the full composite display. For a true full-screen capture including all layers, use the Wayland screenshot method described below.
 
 ## Taking screenshots
 
-### Prerequisites
+There are two screenshot methods. Use the right one for the job:
+
+| Method | Captures | Use when |
+|--------|----------|----------|
+| **CDP** (Chromium only) | Chromium viewport only | Iterating on the landing page HTML/CSS |
+| **Wayland** (grim) | Full compositor output (Chromium + Eww + all layers) | Working on Eww widgets, checking overall layout, or when CDP doesn't show what you need |
+
+### Method 1: CDP screenshot (Chromium only)
+
+#### Prerequisites
 
 An SSH tunnel to the Pi's CDP port must be active:
 
@@ -35,7 +44,7 @@ An SSH tunnel to the Pi's CDP port must be active:
 ssh -i id_ed25519_rpi5 -L 9222:127.0.0.1:9222 -N nixos@openclaw-rpi5.local
 ```
 
-### Using the screenshot tool
+#### Using the screenshot tool
 
 From the devShell (provides `clawpi-screenshot` and Python with websockets):
 
@@ -51,7 +60,7 @@ nix develop --command python3 scripts/screenshot.py [output.png]
 
 Default output: `/tmp/clawpi-screenshot.png`
 
-### Programmatic usage (for Claude)
+#### Programmatic usage (for Claude)
 
 ```sh
 nix develop --command python3 -c "
@@ -71,6 +80,37 @@ asyncio.run(screenshot())
 ```
 
 Then read the screenshot with the Read tool to view it.
+
+### Method 2: Wayland screenshot (full compositor — grim)
+
+Captures the full compositor output including Chromium, Eww overlays, and any other Wayland surfaces. Uses `grim` which is installed as a package on the kiosk user.
+
+#### Taking a Wayland screenshot
+
+```sh
+# Capture on the Pi and copy to local machine in one step
+ssh nixos@<host> "sudo -u kiosk XDG_RUNTIME_DIR=/run/user/\$(id -u kiosk) WAYLAND_DISPLAY=wayland-0 grim /tmp/wayland-screenshot.png" && \
+scp nixos@<host>:/tmp/wayland-screenshot.png /tmp/clawpi-wayland-screenshot.png
+```
+
+Then read `/tmp/clawpi-wayland-screenshot.png` with the Read tool to view it.
+
+#### When to prefer Wayland screenshots
+
+- **Eww widget work** — Eww overlays are invisible to CDP; grim is the only way to see them
+- **Layout verification** — confirm that Eww widgets and Chromium are properly layered/positioned
+- **Debugging visual glitches** — compositor-level issues (transparency, z-order) only show in grim
+- **Overall appearance** — see exactly what the user sees on the HDMI display
+
+#### Troubleshooting
+
+If `grim` fails with a "no output" error, ensure the compositor is running and `WAYLAND_DISPLAY` is set:
+
+```sh
+ssh nixos@<host> "sudo -u kiosk XDG_RUNTIME_DIR=/run/user/\$(id -u kiosk) ls /run/user/\$(id -u kiosk)/wayland-*"
+```
+
+Use the actual socket name shown (usually `wayland-0`).
 
 ## File locations
 
