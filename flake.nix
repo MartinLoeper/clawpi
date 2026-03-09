@@ -193,9 +193,8 @@
             ps.speechbrain
             ps.mutagen
 
-            # TensorFlow for tflite conversion
+            # TensorFlow for tflite conversion (onnx_tf installed via pip)
             ps.tensorflow
-            ps.tensorflow-probability
 
             # General
             ps.pyyaml
