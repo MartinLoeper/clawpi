@@ -267,6 +267,13 @@ Get the canvas workspace directory path and usage instructions. Call this first 
 
 **Returns:** The absolute path to the canvas workspace directory, the base URL where files are served (`http://localhost:3100/canvas/`), and instructions for creating web content.
 
+**Static files only:** The canvas serves plain HTML, CSS, and JS — no build tools (npm, yarn, webpack) are available on the Pi. For third-party libraries, use CDN links directly in your HTML:
+```html
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@latest/build/three.module.js" type="module"></script>
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@4/dist/tailwind.min.css" rel="stylesheet">
+```
+
 ### `canvas_open`
 
 Navigate the kiosk Chromium browser to canvas content via CDP. Use after writing files to the canvas directory.
