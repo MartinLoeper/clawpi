@@ -44,6 +44,17 @@ in
           };
         };
       };
+      plugins = {
+        enabled = true;
+        allow = [ "clawpi-tools" ];
+        load.paths = [
+          "${pkgs.clawpi-tools}/lib/clawpi-tools"
+        ];
+        entries.clawpi-tools = {
+          enabled = true;
+          config = {};
+        };
+      };
     };
   };
 

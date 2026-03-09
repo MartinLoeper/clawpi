@@ -63,6 +63,12 @@ The deploy builds the NixOS closure locally (cross-compiled for aarch64) and cop
 - Skills (`.claude/skills/`) and CLAUDE.md must be **generic** — no user-specific paths, credentials, CLI wrappers, or machine-specific details.
 - User-specific information (e.g. custom CLI wrappers like `mloeper-hcloud`, SSH key names, server IPs) belongs in **dynamic Claude memory** (auto-memory `MEMORY.md`), not in checked-in files.
 
+## OpenClaw Plugins
+
+- Plugins live in `pkgs/` (e.g. `pkgs/clawpi-tools/`)
+- TypeScript loaded directly by the gateway via jiti — no build step
+- When changing plugin source code (`index.ts`), **bump the `version` field** in both `openclaw.plugin.json` and `package.nix` so the Nix store path changes and the gateway picks up the new code
+
 ## Go Packages
 
 - Go packages live in `pkgs/` (e.g. `pkgs/clawpi/`)
