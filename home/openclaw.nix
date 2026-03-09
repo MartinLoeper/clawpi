@@ -21,6 +21,7 @@ let
             "-l" audioCfg.language
             "-np"
             "--no-gpu"
+            "{{MediaPath}}"
           ];
           timeoutSeconds = audioCfg.timeoutSeconds;
         }
