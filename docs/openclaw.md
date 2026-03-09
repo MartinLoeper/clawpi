@@ -65,6 +65,14 @@ This prompts for an API key (obtain one via `claude setup-token` or from [consol
 
 The auth profile is stored at `~/.openclaw/agents/main/agent/auth-profiles.json`.
 
+## Kiosk User Design Decisions
+
+The `kiosk` user is a system user with:
+
+- **Bash shell** — the agent needs to execute commands (SFTP transfers, system tools, etc.). A `nologin` shell would prevent all command execution.
+- **`sshpass`** in system packages — enables the agent to do non-interactive SFTP/SCP file transfers to the user's workstation.
+- **Linger enabled** — ensures the user's systemd services (gateway, token generation) start at boot without requiring a login session.
+
 ## Kiosk Connection
 
 The kiosk specialisation runs Cage + Chromium pointing at `http://localhost:18789`. The Cage service waits for PipeWire before launching Chromium so that audio is available.
