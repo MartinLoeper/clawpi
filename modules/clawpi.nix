@@ -76,6 +76,38 @@ in
       };
     };
 
+    elevenlabs = {
+      enable = lib.mkEnableOption "ElevenLabs cloud TTS (tts_hq tool)";
+
+      apiKeyFile = lib.mkOption {
+        type = lib.types.path;
+        default = "/var/lib/clawpi/elevenlabs-api-key";
+        description = ''
+          Path to a file containing the ElevenLabs API key.
+          Provision with: ./scripts/provision-elevenlabs.sh
+        '';
+      };
+
+      voice = lib.mkOption {
+        type = lib.types.str;
+        default = "JBFqnCBsd6RMkjVDRZzb";
+        description = ''
+          Default ElevenLabs voice ID.
+          George (JBFqnCBsd6RMkjVDRZzb), Rachel (21m00Tcm4TlvDq8ikWAM),
+          Domi (AZnzlk1XvdvUeBnXmlld), Bella (EXAVITQu4vr4xnSDxMaL).
+        '';
+      };
+
+      model = lib.mkOption {
+        type = lib.types.str;
+        default = "eleven_multilingual_v2";
+        description = ''
+          ElevenLabs model ID.
+          eleven_multilingual_v2 (best quality) or eleven_turbo_v2_5 (lower latency).
+        '';
+      };
+    };
+
     telegram = {
       enable = lib.mkEnableOption "Telegram channel for the OpenClaw agent";
 

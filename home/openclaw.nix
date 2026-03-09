@@ -3,6 +3,7 @@ let
   audioCfg = osConfig.services.clawpi.audio;
   groqCfg = osConfig.services.clawpi.audio.groq;
   debugCfg = osConfig.services.clawpi.debug;
+  elevenlabsCfg = osConfig.services.clawpi.elevenlabs;
   tgCfg = osConfig.services.clawpi.telegram;
 
   whisperModel = pkgs.whisper-model.override { model = audioCfg.model; };
@@ -183,8 +184,13 @@ in
     Install.WantedBy = [ "default.target" ];
     Service = {
       EnvironmentFile = "/var/lib/kiosk/.openclaw/gateway-token.env";
-    } // lib.optionalAttrs debugCfg {
-      Environment = [ "OPENCLAW_LOG_LEVEL=debug" ];
+      Environment =
+        lib.optional debugCfg "OPENCLAW_LOG_LEVEL=debug"
+        ++ lib.optionals elevenlabsCfg.enable [
+          "CLAWPI_ELEVENLABS_API_KEY_FILE=${toString elevenlabsCfg.apiKeyFile}"
+          "CLAWPI_ELEVENLABS_VOICE=${elevenlabsCfg.voice}"
+          "CLAWPI_ELEVENLABS_MODEL=${elevenlabsCfg.model}"
+        ];
     } // lib.optionalAttrs audioCfg.enable {
       ExecStartPre = toString patchConfigScript;
     };

@@ -2,7 +2,7 @@
 
 stdenvNoCC.mkDerivation {
   pname = "clawpi-tools";
-  version = "0.5.2";
+  version = "0.6.0";
 
   src = lib.cleanSource ./.;
 

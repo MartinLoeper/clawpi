@@ -78,6 +78,17 @@ Speech-to-text via whisper.cpp for Telegram voice messages and future voice inpu
 
 When enabled, installs `whisper-cpp`, `ffmpeg`, and `file` utilities (plus `curl` when Groq is enabled). The gateway's `ExecStartPre` patches `openclaw.json` to configure the transcription wrapper. When Groq is enabled, the wrapper tries Groq API first and falls back to local whisper.cpp on failure.
 
+## ElevenLabs TTS
+
+High-quality text-to-speech via the ElevenLabs cloud API. When enabled, the `tts_hq` tool is registered in the clawpi-tools plugin.
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `services.clawpi.elevenlabs.enable` | bool | `false` | Enable the `tts_hq` tool (ElevenLabs cloud TTS) |
+| `services.clawpi.elevenlabs.apiKeyFile` | path | `/var/lib/clawpi/elevenlabs-api-key` | Path to ElevenLabs API key. Provision with `./scripts/provision-elevenlabs.sh` |
+| `services.clawpi.elevenlabs.voice` | string | `"JBFqnCBsd6RMkjVDRZzb"` (George) | Default ElevenLabs voice ID |
+| `services.clawpi.elevenlabs.model` | string | `"eleven_multilingual_v2"` | Default ElevenLabs model ID |
+
 ## Overlay Daemon
 
 The `clawpi` overlay daemon connects to the gateway and drives Eww status overlays (thinking, responding, tool use indicators). It runs as a Home Manager user service under the `kiosk` user, gated on `graphical-session.target`.

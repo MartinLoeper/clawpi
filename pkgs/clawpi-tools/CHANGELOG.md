@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.0
+
+- Add `tts_hq` tool — high-quality text-to-speech via ElevenLabs API
+- Uses native fetch, no SDK dependency
+
 ## 0.5.2
 
 - Add volume calibration note to `audio_play` description

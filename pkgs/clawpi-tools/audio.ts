@@ -1,5 +1,5 @@
 import { Type } from "@sinclair/typebox";
-import { readFile, unlink } from "node:fs/promises";
+import { readFile, writeFile, unlink, mkdir } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
 import { homedir } from "node:os";
 import { join } from "node:path";
@@ -413,4 +413,102 @@ export default function (api: any) {
       }
     },
   });
+
+  // ── TTS: high-quality via ElevenLabs ─────────────────────────────
+  const ELEVENLABS_KEY_FILE = process.env.CLAWPI_ELEVENLABS_API_KEY_FILE;
+  const ELEVENLABS_DEFAULT_VOICE = process.env.CLAWPI_ELEVENLABS_VOICE ?? "JBFqnCBsd6RMkjVDRZzb";
+  const ELEVENLABS_DEFAULT_MODEL = process.env.CLAWPI_ELEVENLABS_MODEL ?? "eleven_multilingual_v2";
+
+  if (ELEVENLABS_KEY_FILE) {
+    const keyFile = ELEVENLABS_KEY_FILE;
+
+    async function getElevenLabsKey(): Promise<string | null> {
+      try {
+        return (await readFile(keyFile, "utf-8")).trim();
+      } catch {
+        return null;
+      }
+    }
+
+    api.registerTool({
+      name: "tts_hq",
+      description:
+        "Generate high-quality speech from text using ElevenLabs cloud TTS. " +
+        "Returns the path to the generated MP3 file. " +
+        "Use this instead of the built-in tts tool when the user asks for " +
+        "higher quality, more natural, or more expressive speech. " +
+        "After generating, call audio_play with the returned path to play it.\n\n" +
+        "Requires an ElevenLabs API key provisioned at " +
+        "/var/lib/clawpi/elevenlabs-api-key (use ./scripts/provision-elevenlabs.sh).",
+      parameters: Type.Object({
+        text: Type.String({
+          description: "The text to convert to speech",
+        }),
+        voice: Type.Optional(
+          Type.String({
+            description:
+              'ElevenLabs voice ID (default: "JBFqnCBsd6RMkjVDRZzb" — George). ' +
+              "Other popular voices: Rachel (21m00Tcm4TlvDq8ikWAM), " +
+              "Domi (AZnzlk1XvdvUeBnXmlld), Bella (EXAVITQu4vr4xnSDxMaL)",
+          }),
+        ),
+        model: Type.Optional(
+          Type.String({
+            description:
+              'Model ID (default: "eleven_multilingual_v2"). ' +
+              "Use eleven_turbo_v2_5 for lower latency.",
+          }),
+        ),
+      }),
+      async execute(
+        _id: string,
+        params: { text: string; voice?: string; model?: string },
+      ) {
+        const apiKey = await getElevenLabsKey();
+        if (!apiKey) {
+          return text(
+            "Error: ElevenLabs API key not found. " +
+            "Provision it with: ./scripts/provision-elevenlabs.sh",
+          );
+        }
+
+        const voiceId = params.voice ?? ELEVENLABS_DEFAULT_VOICE;
+        const modelId = params.model ?? ELEVENLABS_DEFAULT_MODEL;
+        const outDir = "/tmp/clawpi-tts-hq";
+        const outFile = join(outDir, `voice-${randomBytes(4).toString("hex")}.mp3`);
+
+        await mkdir(outDir, { recursive: true });
+
+        const resp = await fetch(
+          `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
+          {
+            method: "POST",
+            headers: {
+              "xi-api-key": apiKey,
+              "Content-Type": "application/json",
+              Accept: "audio/mpeg",
+            },
+            body: JSON.stringify({
+              text: params.text,
+              model_id: modelId,
+            }),
+          },
+        );
+
+        if (!resp.ok) {
+          const errBody = await resp.text().catch(() => "");
+          return text(`Error: ElevenLabs API returned ${resp.status}: ${errBody}`);
+        }
+
+        const buffer = Buffer.from(await resp.arrayBuffer());
+        await writeFile(outFile, buffer);
+
+        return text(
+          `Generated speech (${buffer.length} bytes, voice=${voiceId}, model=${modelId}).\n` +
+          `File: ${outFile}\n\n` +
+          `Play it with audio_play.`,
+        );
+      },
+    });
+  }
 }

@@ -19,6 +19,7 @@ ClawPi ships an OpenClaw plugin (`clawpi-tools`) that gives the agent hardware c
 | `audio_record` | Audio | `seconds?` (1–30) | Record audio from mic, returns WAV |
 | `audio_transcribe` | Audio | `seconds?`, `language?` | Record and transcribe speech via whisper.cpp |
 | `audio_play` | Audio | `path` | Play an audio file through the speakers |
+| `tts_hq` | Audio | `text`, `voice?`, `model?` | High-quality TTS via ElevenLabs API |
 | `screenshot_display` | Screenshot | — | Full compositor screenshot (grim) |
 | `screenshot_browser` | Screenshot | `format?`, `quality?` | Browser viewport screenshot (CDP) |
 
@@ -144,7 +145,37 @@ Play an audio file through the default audio output (speakers). Supports WAV, MP
 
 **How it works:** WAV files are played directly via `pw-play`. Other formats (MP3, OGG, etc.) are first converted to WAV with `ffmpeg`, then played.
 
-**TTS integration:** The built-in `tts` tool generates speech as an MP3 file (e.g. `/tmp/openclaw/tts-.../voice-*.mp3`) and sends it as a Telegram voice message. To also play it through the Pi's speakers, the agent can call `audio_play` with the TTS output path.
+**TTS integration:** The built-in `tts` tool generates speech as an MP3 file (e.g. `/tmp/openclaw/tts-.../voice-*.mp3`) and sends it as a Telegram voice message. To also play it through the Pi's speakers, the agent can call `audio_play` with the TTS output path. For higher quality, use `tts_hq` which generates via ElevenLabs.
+
+### `tts_hq`
+
+Generate high-quality speech from text using the ElevenLabs cloud TTS API. Returns the path to the generated MP3 file — call `audio_play` to play it through the speakers.
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `text` | string | yes | — | Text to convert to speech |
+| `voice` | string | no | `JBFqnCBsd6RMkjVDRZzb` (George) | ElevenLabs voice ID |
+| `model` | string | no | `eleven_multilingual_v2` | ElevenLabs model ID |
+
+**Returns:** File path to the generated MP3 (e.g. `/tmp/clawpi-tts-hq/voice-*.mp3`).
+
+**Setup:** Provision an API key with `./scripts/provision-elevenlabs.sh [host]`. The key is read from `/var/lib/clawpi/elevenlabs-api-key` at runtime.
+
+**Popular voices:**
+
+| Voice | ID | Style |
+|-------|----|-------|
+| George | `JBFqnCBsd6RMkjVDRZzb` | Warm, natural (default) |
+| Rachel | `21m00Tcm4TlvDq8ikWAM` | Calm, clear |
+| Domi | `AZnzlk1XvdvUeBnXmlld` | Strong, expressive |
+| Bella | `EXAVITQu4vr4xnSDxMaL` | Soft, friendly |
+
+**Models:**
+
+| Model | Latency | Quality | Languages |
+|-------|---------|---------|-----------|
+| `eleven_multilingual_v2` | Standard | Best | 29 languages |
+| `eleven_turbo_v2_5` | Low | Good | 32 languages |
 
 ## Screenshots
 
