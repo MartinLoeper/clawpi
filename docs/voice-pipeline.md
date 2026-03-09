@@ -143,55 +143,82 @@ A Python script (`voice-pipeline.py`) ties everything together:
 
 ## Training a Custom Wake Word Model
 
-The bundled "hey jarvis" model works out of the box. To train a custom "hey claw" model:
+The bundled "hey jarvis" model works out of the box. To train a custom "hey claw" model, use the Nix devShell and training scripts in `training/`.
 
-### Approach 1: Synthetic training (recommended to start)
+### Training infrastructure
 
-openWakeWord's training pipeline generates synthetic samples from text using TTS, then augments them with noise/reverb/pitch to create a robust dataset.
+A dedicated Nix devShell provides all training dependencies with GPU acceleration via ROCm:
 
-1. **Clone openWakeWord** on your dev machine (x86_64):
-   ```sh
-   git clone https://github.com/dscripka/openWakeWord
-   cd openWakeWord
-   pip install -e ".[training]"
-   ```
+```sh
+# Enter the training shell
+nix develop .#training
 
-2. **Generate synthetic data** using the provided Jupyter notebook or scripts:
-   - Positive samples: TTS-synthesized "hey claw" with varied voices/accents (Piper, Google TTS, etc.)
-   - Negative samples: general speech from LibriSpeech or similar datasets
-   - Automatic augmentation: background noise, reverb, room simulation, pitch shifting
+# First-time setup: clones repos, downloads TTS model, training data (~3GB)
+cd training && bash setup.sh
 
-3. **Train the model** (~30min on CPU):
-   ```sh
-   python -m openwakeword.train --positive_data hey_claw_positive/ \
-     --negative_data negative_samples/ --output_dir models/
-   ```
+# Train the model (3 steps: generate → augment → train)
+bash train.sh
+```
 
-4. **Output:** a `.tflite` file (~50KB)
+**What the devShell provides:**
+- PyTorch with ROCm GPU support
+- openWakeWord training dependencies (speechbrain, torchmetrics, torch-audiomentations, etc.)
+- Piper TTS for synthetic sample generation
+- TensorFlow for ONNX→TFLite conversion
+- Missing pip packages (audiomentations, acoustics, pronouncing, deep-phonemizer, onnx_tf) installed locally via pip
 
-### Approach 2: Real-voice training (better accuracy)
+**Training data (downloaded by `setup.sh`):**
+- MIT room impulse responses (for realistic reverb augmentation)
+- AudioSet + FMA background audio (noise mixing)
+- ACAV100M pre-computed features (~2GB, 2000 hours of negative data)
+- Validation features (~11 hours, for false-positive rate estimation)
 
-Record 50+ real samples of "hey claw" from different speakers, distances, and volumes. Mix with synthetic data for best results.
+### Training config: `training/hey_claw.yml`
 
-**Recording tips:**
-- Vary distance: 0.5m, 1m, 2m, 3m from the mic
-- Vary tone: normal, whisper, loud, tired, excited
-- Vary speakers: different people if possible
-- Record in the actual environment (ambient noise helps generalization)
+The config defines the "hey claw" target phrase with custom negative phrases to reduce false positives on similar-sounding words ("hey claude", "hey clock", "hey class", etc.). Key parameters:
+
+| Parameter | Value | Description |
+|-----------|-------|-------------|
+| `n_samples` | 50,000 | Synthetic positive samples |
+| `n_samples_val` | 5,000 | Validation samples |
+| `augmentation_rounds` | 2 | Augmentation passes per sample |
+| `steps` | 50,000 | Training iterations |
+| `layer_size` | 32 | Model DNN layer size |
+| `target_false_positives_per_hour` | 0.2 | Target FP rate |
+
+### Training steps
+
+The automated pipeline runs three sequential steps:
+
+1. **Generate clips** — Piper TTS synthesizes "hey claw" in varied voices/accents, plus adversarial negatives. Uses GPU for faster generation.
+2. **Augment clips** — Applies room impulse responses, background noise, pitch shifts, and reverb to make synthetic clips realistic.
+3. **Train model** — Trains a small DNN on openWakeWord features with early stopping and checkpoint averaging. Outputs `.onnx` and `.tflite` files.
+
+### Improving the model with real recordings
+
+For better real-world accuracy, supplement synthetic data with real voice recordings:
+
+- Record 50+ samples of "hey claw" from different speakers, distances (0.5–3m), and tones (normal, whisper, loud)
+- Record in the actual deployment environment (ambient noise helps generalization)
+- Place recordings in `training/data/real_positive/` as 16kHz mono WAV files
+- The training pipeline can incorporate these alongside synthetic samples
 
 ### Deploying the model
 
-Add the trained model to the NixOS config:
+After training, copy the output model and configure the NixOS option:
 
 ```nix
 services.clawpi.voice = {
   enable = true;
-  wakewordModel = ./models/hey_claw.tflite;
+  wakewordModel = ./training/output/hey_claw/hey_claw.tflite;
   threshold = 0.5;  # Tune: lower = more sensitive, higher = fewer false positives
 };
 ```
 
-The model file will be included in the Nix store and passed to openWakeWord at runtime.
+Test locally first with a microphone:
+```sh
+python openwakeword/examples/detect_from_microphone.py --model_path output/hey_claw/hey_claw.tflite
+```
 
 ## Implementation Phases
 

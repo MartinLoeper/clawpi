@@ -69,6 +69,7 @@
         specialArgs = commonArgs.specialArgs;
         modules = commonArgs.modules ++ [
           {
+            services.clawpi.agent.documents.hardwareAwareness.enable = true;
             services.clawpi.canvas.tmpfs = false;
             services.clawpi.audio.enable = true;
             services.clawpi.audio.groq.enable = true;
@@ -103,6 +104,7 @@
         modules = commonArgs.modules ++ [
           {
             services.clawpi.debug = true;
+            services.clawpi.agent.documents.hardwareAwareness.enable = true;
             services.clawpi.canvas.tmpfs = false;
             services.clawpi.audio.enable = true;
             services.clawpi.audio.groq.enable = true;
@@ -154,6 +156,73 @@
           '';
         in pkgs.mkShell {
           packages = [ python screenshot ];
+        };
+
+      # Wake word model training (GPU-accelerated via ROCm)
+      # Usage: nix develop .#training
+      devShells.x86_64-linux.training =
+        let
+          pkgs = import nixos-raspberrypi.inputs.nixpkgs {
+            system = "x86_64-linux";
+            config.allowUnfree = true;
+            config.rocmSupport = true;
+          };
+          python = pkgs.python3.withPackages (ps: [
+            # PyTorch with ROCm for GPU-accelerated training
+            ps.torchWithRocm
+            ps.torchaudio
+            ps.torch-audiomentations
+            ps.torchinfo
+            ps.torchmetrics
+
+            # openWakeWord dependencies
+            ps.onnxruntime
+            ps.onnx
+            ps.numpy
+            ps.scipy
+            ps.scikit-learn
+            ps.tqdm
+            ps.requests
+
+            # TTS and audio processing
+            ps.piper-phonemize
+            ps.webrtcvad
+
+            # Training data
+            ps.datasets
+            ps.speechbrain
+            ps.mutagen
+
+            # TensorFlow for tflite conversion
+            ps.tensorflow
+            ps.tensorflow-probability
+
+            # General
+            ps.pyyaml
+            ps.pip
+            ps.setuptools
+          ]);
+        in pkgs.mkShell {
+          packages = [
+            python
+            pkgs.git
+            pkgs.wget
+            pkgs.ffmpeg-headless
+          ];
+          shellHook = ''
+            echo "openWakeWord training shell (ROCm GPU enabled)"
+            echo ""
+            echo "First time setup:"
+            echo "  cd training && bash setup.sh"
+            echo ""
+            echo "Train 'hey claw' model:"
+            echo "  cd training && bash train.sh"
+            echo ""
+            export PIP_PREFIX="$PWD/training/.pip"
+            export PYTHONPATH="$PIP_PREFIX/lib/python${pkgs.python3.pythonVersion}/site-packages:$PYTHONPATH"
+            export PATH="$PIP_PREFIX/bin:$PATH"
+            mkdir -p "$PIP_PREFIX"
+          '';
         };
     };
 }

@@ -1,0 +1,12 @@
+# Cloned repos
+openwakeword/
+piper-sample-generator/
+
+# Downloaded data
+data/
+
+# Training output
+output/
+
+# Pip packages installed locally
+.pip/
