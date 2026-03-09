@@ -2,10 +2,10 @@
 
 ## Overview
 
-Always-on voice control for the OpenClaw smart display. The user says **"claw"**, the system wakes up, transcribes the spoken command, and feeds it to the OpenClaw agent.
+Always-on voice control for the OpenClaw smart display. The user says **"hey claw"**, the system wakes up, transcribes the spoken command, and feeds it to the OpenClaw agent.
 
 ```
-USB Mic → PipeWire → openWakeWord ("claw") → whisper.cpp (transcribe) → OpenClaw Gateway
+USB Mic → PipeWire → openWakeWord ("hey claw") → whisper.cpp (transcribe) → OpenClaw Gateway
                                                                               │
                                                                         Agent acts
                                                                         (browser, tools, etc.)
@@ -16,7 +16,7 @@ USB Mic → PipeWire → openWakeWord ("claw") → whisper.cpp (transcribe) → 
 ### 1. Hotword Detection — openWakeWord
 
 - **Engine:** [openWakeWord](https://github.com/dscripka/openWakeWord) (fully open-source, ONNX Runtime)
-- **Wake word:** `claw` (custom-trained model)
+- **Wake word:** `hey claw` (custom-trained model)
 - **Resource usage:** ~5% CPU, ~50MB RAM — runs continuously with negligible impact
 - **Audio input:** PipeWire capture from USB microphone
 
@@ -27,7 +27,7 @@ USB Mic → PipeWire → openWakeWord ("claw") → whisper.cpp (transcribe) → 
 - Active maintenance and good community (Home Assistant / Rhasspy ecosystem)
 
 **Custom model training:**
-1. Record ~50 samples of "claw" (various speakers, distances, tones)
+1. Record ~50 samples of "hey claw" (various speakers, distances, tones)
 2. Use openWakeWord's training pipeline (runs on x86_64, produces a small `.onnx` model)
 3. Deploy the `.onnx` file to the Pi as part of the NixOS configuration
 4. Synthetic augmentation (noise, reverb, pitch shift) is applied automatically during training
@@ -53,7 +53,7 @@ Start with `base` quantized. Fall back to `tiny` if latency is unacceptable.
 
 Provide clear audio cues so the user knows the system heard them:
 
-- **Wake sound:** short chime when "claw" is detected (confirms listening)
+- **Wake sound:** short chime when "hey claw" is detected (confirms listening)
 - **Done sound:** brief tone when transcription completes and command is sent
 - **Error sound:** different tone if transcription fails or times out
 
@@ -108,7 +108,7 @@ The agent receives the voice command as if the user typed it, and can respond wi
 | whisper.cpp | In nixpkgs (`openai-whisper-cpp`) | Use directly |
 | openWakeWord | Not in nixpkgs | Package as flake input or `python3.withPackages` derivation |
 | ONNX Runtime | In nixpkgs (`onnxruntime`) | Dependency of openWakeWord |
-| Custom "claw" model | N/A | Train + include as a static asset in the flake |
+| Custom "hey claw" model | N/A | Train + include as a static asset in the flake |
 
 ## Pipeline Orchestrator
 
@@ -116,16 +116,16 @@ A Python script (`voice-pipeline.py`) ties everything together:
 
 ```
 1. Initialize PipeWire capture stream
-2. Load openWakeWord with "claw" model
+2. Load openWakeWord with "hey claw" model
 3. Loop:
    a. Feed audio chunks to openWakeWord
-   b. On wake word detection:
+   b. On "hey claw" detection:
       - Play wake chime
       - Start recording to buffer
       - Run whisper.cpp on buffered audio (stop on silence timeout)
       - Send transcript to gateway WebSocket
       - Play done/error sound
-   c. Continue listening for next wake word
+   c. Continue listening for next "hey claw"
 ```
 
 **Silence detection:** Use Silero VAD or simple RMS energy threshold to detect end-of-speech. This avoids running whisper.cpp on silence and gives a natural "I'm done talking" boundary.
@@ -134,7 +134,7 @@ A Python script (`voice-pipeline.py`) ties everything together:
 
 ### Phase 1: Basic pipeline (MVP)
 - [ ] Package openWakeWord for NixOS (Python derivation)
-- [ ] Train custom "claw" wake word model
+- [ ] Train custom "hey claw" wake word model
 - [ ] Write pipeline orchestrator script
 - [ ] NixOS module with systemd service
 - [ ] Test with USB mic on RPi 5
@@ -148,7 +148,7 @@ A Python script (`voice-pipeline.py`) ties everything together:
 
 ### Phase 3: Advanced
 - [ ] "Talk mode" — continuous conversation without re-triggering wake word
-- [ ] Multi-wake-word support ("claw", "computer", custom)
+- [ ] Multi-wake-word support ("hey claw", "computer", custom)
 - [ ] Speaker identification (who is talking?)
 - [ ] Interrupt support — say "claw stop" to cancel an in-progress action
 - [ ] TTS responses via Piper (local, fast, aarch64-native)
@@ -156,6 +156,6 @@ A Python script (`voice-pipeline.py`) ties everything together:
 ## Open Questions
 
 1. **Mic recommendation:** Which USB mic gives the best far-field performance for the price? ReSpeaker is popular but there may be better options.
-2. **Wake word false positives:** "claw" is short — will it trigger too often? May need to test "open claw" or "hey claw" as alternatives if false positive rate is high.
+2. **Wake word false positives:** Two-syllable "hey claw" should have a low false positive rate. If still too trigger-happy, "open claw" is an alternative.
 3. **Concurrent resource usage:** whisper.cpp uses all 4 Cortex-A76 cores during transcription. Will this cause browser jank? May need to pin whisper to 2 cores via `taskset`.
 4. **PipeWire routing:** Need to ensure the USB mic is the default capture device and doesn't conflict with browser audio playback.
