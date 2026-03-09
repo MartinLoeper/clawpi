@@ -1,4 +1,8 @@
-{ pkgs, ... }: {
+{ pkgs, osConfig, lib, ... }:
+let
+  debugCfg = osConfig.services.clawpi.debug;
+in
+{
   home.packages = [
     pkgs.clawpi
     pkgs.eww
@@ -46,7 +50,7 @@
         "CLAWPI_GATEWAY_URL=ws://localhost:18789"
         "CLAWPI_EWW_CONFIG=${pkgs.clawpi}/share/clawpi/eww"
         "CLAWPI_WEB_ADDR=:3100"
-      ];
+      ] ++ lib.optional debugCfg "CLAWPI_DEBUG=1";
     };
   };
 }

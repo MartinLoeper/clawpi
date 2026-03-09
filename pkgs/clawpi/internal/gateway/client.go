@@ -25,6 +25,7 @@ const (
 type Client struct {
 	url           string
 	token         string
+	Debug         bool
 	OnStateChange func(state AgentState, toolName string)
 	OnDisconnect  func()
 	OnConnect     func()
@@ -99,6 +100,10 @@ func (c *Client) connect() error {
 		_, data, err := conn.ReadMessage()
 		if err != nil {
 			return fmt.Errorf("read: %w", err)
+		}
+
+		if c.Debug {
+			log.Printf("[ws-raw] %s", string(data))
 		}
 
 		var msg GatewayMessage

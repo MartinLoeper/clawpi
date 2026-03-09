@@ -10,6 +10,7 @@ type Config struct {
 	GatewayURL string
 	Token      string
 	WebAddr    string
+	Debug      bool
 }
 
 func Load() (*Config, error) {
@@ -50,9 +51,12 @@ func Load() (*Config, error) {
 		webAddr = ":3100"
 	}
 
+	debug := os.Getenv("CLAWPI_DEBUG") == "1" || os.Getenv("CLAWPI_DEBUG") == "true"
+
 	return &Config{
 		GatewayURL: gatewayURL,
 		Token:      token,
 		WebAddr:    webAddr,
+		Debug:      debug,
 	}, nil
 }

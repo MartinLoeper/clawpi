@@ -37,6 +37,7 @@ func main() {
 	ctrl := eww.NewController(ewwConfigDir)
 
 	client := gateway.NewClient(cfg.GatewayURL, cfg.Token)
+	client.Debug = cfg.Debug
 
 	client.OnConnect = func() {
 		ctrl.SetState(eww.StateIdle)
