@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.10.0
+
+- Add `canvas_folder` tool — get workspace path and usage instructions
+- Add `canvas_open` tool — navigate kiosk browser to canvas content via CDP
+- Add `canvas_close` tool — navigate back to landing page
+- Add `canvas_archive` tool — archive current project with dedup naming
+- Add `canvas_list_archive` tool — list all archived canvas projects
+- Add `canvas_restore` tool — restore archived project with auto-archive of current
+
 ## 0.9.0
 
 - Add `screen_record_start` tool — start Wayland screen recording via wf-recorder
