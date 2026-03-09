@@ -1,6 +1,6 @@
-# openclaw-rpi-dashboards
+# ClawPi
 
-A Raspberry Pi 5 + 10" touchscreen that acts as a voice-controlled AI dashboard appliance. Say "openclaw", describe what you want, and the [OpenClaw gateway](https://github.com/MartinLoeper/nix-openclaw) builds and displays it — no coding required.
+A Raspberry Pi 5 + 10" touchscreen that acts as a voice-controlled AI dashboard appliance. Say "hey claw", describe what you want, and the [OpenClaw gateway](https://github.com/MartinLoeper/nix-openclaw) builds and displays it — no coding required.
 
 1. **OpenClaw gateway** runs on the Pi, generating dashboards on `localhost:18789`
 2. **Kiosk mode** (Cage + Chromium) shows them fullscreen on the wired display

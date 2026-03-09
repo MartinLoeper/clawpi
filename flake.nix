@@ -1,5 +1,5 @@
 {
-  description = "Minimal bootable NixOS for Raspberry Pi 5";
+  description = "ClawPi — AI-powered smart display appliance for Raspberry Pi 5";
 
   inputs = {
     nixos-raspberrypi.url = "github:nvmd/nixos-raspberrypi/main";

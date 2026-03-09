@@ -45,11 +45,11 @@ EOF
 systemctl restart nix-daemon"
 
 # 3. Clone the repo
-ssh root@<server-ip> "bash -lc 'git clone https://github.com/MartinLoeper/openclaw-rpi-dashboards.git'"
+ssh root@<server-ip> "bash -lc 'git clone https://github.com/MartinLoeper/clawpi.git'"
 
 # 4. Start the build in a tmux session (so it survives SSH disconnects)
 #    Always pull latest changes before building!
-ssh root@<server-ip> "bash -lc 'cd openclaw-rpi-dashboards && git pull && tmux new-session -d -s build \"nix build .#nixosConfigurations.rpi5.config.system.build.toplevel --show-trace -L 2>&1 | tee /tmp/build.log\"'"
+ssh root@<server-ip> "bash -lc 'cd clawpi && git pull && tmux new-session -d -s build \"nix build .#nixosConfigurations.rpi5.config.system.build.toplevel --show-trace -L 2>&1 | tee /tmp/build.log\"'"
 ```
 
 ### Monitoring the build
@@ -76,7 +76,7 @@ After the build completes on the server, copy the closure to your local store so
 
 ```sh
 # Copy the full closure from the server (uses your SSH keys directly)
-REMOTE_PATH="$(ssh root@<server-ip> readlink -f openclaw-rpi-dashboards/result)"
+REMOTE_PATH="$(ssh root@<server-ip> readlink -f clawpi/result)"
 nix copy --from "ssh://root@<server-ip>" "$REMOTE_PATH" --no-check-sigs
 ```
 

@@ -36,7 +36,7 @@ echo ""
 if [ -n "${REMOTE_CACHE}" ]; then
   echo "  Remote cache: root@${REMOTE_CACHE}"
   echo "Copying build closure from remote cache..."
-  REMOTE_PATH="$(ssh "root@${REMOTE_CACHE}" readlink -f openclaw-rpi-dashboards/result)"
+  REMOTE_PATH="$(ssh "root@${REMOTE_CACHE}" readlink -f clawpi/result)"
   nix copy --from "ssh://root@${REMOTE_CACHE}" "${REMOTE_PATH}" --no-check-sigs
   echo "Done. Closure available locally."
 fi

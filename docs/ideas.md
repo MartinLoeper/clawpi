@@ -41,7 +41,7 @@ This is a real differentiator vs. Raspberry Pi projects that rely on manual `apt
 
 ## Project Name
 
-Find a proper name for the project. "openclaw-rpi-dashboards" is a working title — it undersells the vision and ties it to a single use case. The name should convey that this is a general-purpose AI-powered smart display platform, not just a dashboard viewer. Ideally short, memorable, and available as a GitHub org / npm scope / domain.
+~~Find a proper name for the project.~~ ✅ **Done** — the project is now called **ClawPi**.
 
 ## Reliable mDNS / Avahi
 

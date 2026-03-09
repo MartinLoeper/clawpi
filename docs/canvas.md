@@ -1,4 +1,4 @@
-# Canvas: Kiosk Display for OpenClaw RPi Dashboards
+# Canvas: Kiosk Display for ClawPi
 
 ## Decision
 

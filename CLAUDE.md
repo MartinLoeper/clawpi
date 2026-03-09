@@ -1,4 +1,4 @@
-# OpenClaw RPi Dashboards
+# ClawPi
 
 ## Deployment
 
