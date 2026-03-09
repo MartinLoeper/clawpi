@@ -4,7 +4,7 @@ let
   models = {
     tiny = {
       url = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin";
-      hash = "sha256-VLSQ/jJhkWRQU0t3sMfKsMR1pN6JjGnnFNJMOrsRwUo=";
+      hash = "sha256-vgfgSOHlma1GNByNKhNWRQl6U4IhZ4t6zdGxkZxuGyE=";
     };
     base = {
       url = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin";
