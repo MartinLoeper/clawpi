@@ -56,6 +56,29 @@ mDNS (`openclaw-rpi5.local`) is critical for a good UX — users shouldn't have 
 
 Use [Eww](https://github.com/elkowar/eww) to overlay brief agent messages directly on screen in a speech bubble style — a lightweight alternative to TTS that costs fewer tokens. The agent writes short, direct status updates or responses to a file/socket, and an Eww widget renders them as a floating bubble on top of the kiosk browser. Cheaper and faster than generating audio, and works well on the small 10" display where brevity is key.
 
+## Choice Picker Overlay via Eww
+
+When the agent needs to disambiguate — multiple search results, several matching links, unclear intent — it should present a numbered/lettered choice list as an Eww overlay in the center of the screen. The user just says "2" or "B" to pick, no need to repeat the full option.
+
+This should be shipped as a **default skill bundle** (or enableable via a NixOS option like `services.openclaw.skills.ui-tools = true`) that gives the agent a `show_choices` tool. The tool takes a list of options, renders the Eww widget, and returns the user's selection. The overlay should be large, readable from a distance, and auto-dismiss after selection or timeout.
+
+Example flow:
+1. User: "play that Zuckerberg hearing video"
+2. Agent finds 3 matching YouTube results → calls `show_choices`
+3. Eww overlay appears: `[1] Bad Lip Reading — "THE ZUCC" [2] Full Senate Hearing [3] Highlights Compilation`
+4. User: "1"
+5. Agent opens the selected video
+
+This pattern generalizes to any multi-option scenario: "which Wi-Fi network?", "which dashboard?", "which file to send?", etc.
+
+## OSD Overlays via Eww (Volume, Brightness)
+
+Use Eww to show on-screen display (OSD) widgets when the agent adjusts hardware settings — a volume bar when changing speaker volume, a brightness indicator when adjusting the display, etc. Clean, minimal overlays that fade after a few seconds, like a TV remote OSD.
+
+- **Speaker volume** — set a sane default volume (e.g. 50%) applied on every boot via a PipeWire/ALSA startup script. The agent can change volume via `wpctl set-volume` and the current level persists in a config file that the boot script reads. Show an Eww volume bar when changed.
+- **Display brightness** — research whether HDMI-connected displays support brightness control at all (DDC/CI via `ddcutil`, or backlight sysfs for DSI panels). If supported, expose it the same way: sane boot default, agent-adjustable, OSD overlay.
+- **Boot defaults** — store defaults in a simple file (e.g. `/var/lib/kiosk/.openclaw/hw-defaults.conf`) read by a oneshot systemd service at boot. The agent can update defaults so they survive reboots.
+
 ## Virtual Keyboard via Eww
 
 Provide a button (Eww overlay) to open a virtual on-screen keyboard so the user can type directly into the agent's main session on the display. Use cases:
@@ -73,6 +96,15 @@ Teach the agent to respond to questions like "what is that?" or "what am I seein
 Contextual questions about visible content: "is there anything funny?" — agent snapshots the viewport, reads YouTube comments (or any text on screen), and gives a brief, opinionated summary. Works for any page: "summarize what's on screen", "explain this error", "what does this chart say?", "translate that". The agent becomes a real-time reading companion for the display.
 
 Also enable voice-controlled page navigation: "go down", "scroll up", "click [link text]", "go back". The agent interprets these as browser actions via CDP — scrolling the viewport, clicking elements by their visible text, navigating history. If a command is ambiguous (e.g. multiple links matching "click settings"), the agent should ask the user which one they mean.
+
+Natural language content requests: the agent should understand vague or conversational commands and figure out the right platform and action. Examples:
+
+- "open the legendary Zuckerberg hearing from Bad Lip Reading" → search YouTube, find the video, open it in the browser
+- "put on some lo-fi beats" → open a lo-fi YouTube stream or playlist
+- "show me the weather" → open a weather dashboard or site for the user's location
+- "what's on Hacker News?" → navigate to HN, summarize the front page
+
+The agent uses its world knowledge to resolve what the user means, picks the right site (YouTube, Wikipedia, a news site, etc.), and navigates there via CDP — no need for the user to dictate URLs or platform names.
 
 ## Email Relay (send-only, restricted recipient)
 
