@@ -91,6 +91,34 @@
         ];
       };
 
+      # Telegram + debug tools (speaker-test, etc.)
+      nixosConfigurations.rpi5-telegram-debug = nixos-raspberrypi.lib.nixosSystem {
+        specialArgs = commonArgs.specialArgs;
+        modules = commonArgs.modules ++ [
+          {
+            services.clawpi.debug = true;
+            services.clawpi.telegram = {
+              enable = true;
+
+              # Workaround for https://github.com/openclaw/openclaw/issues/34790
+              streaming = "block";
+              blockStreaming = true;
+
+              # Personal preference
+              replyToMode = "all";
+              ackReaction = "👀";
+              reactionLevel = "extensive";
+              reactionNotifications = "all";
+              actions = {
+                reactions = true;
+                sendMessage = true;
+                sticker = true;
+              };
+            };
+          }
+        ];
+      };
+
       # For building flashable SD images (./build.sh)
       nixosConfigurations.rpi5-installer = nixos-raspberrypi.lib.nixosSystem {
         specialArgs = commonArgs.specialArgs;

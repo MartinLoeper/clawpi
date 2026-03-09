@@ -1,6 +1,11 @@
-{ lib, ... }:
+{ lib, pkgs, config, ... }:
+let
+  cfg = config.services.clawpi;
+in
 {
   options.services.clawpi = {
+    debug = lib.mkEnableOption "extra debugging tools (speaker-test, etc.)";
+
     gateway = {
       url = lib.mkOption {
         type = lib.types.str;
@@ -110,5 +115,9 @@
         };
       };
     };
+  };
+
+  config = lib.mkIf cfg.debug {
+    environment.systemPackages = [ pkgs.alsa-utils ];
   };
 }

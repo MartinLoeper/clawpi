@@ -147,6 +147,33 @@ Teach the agent to:
 - **Datadog dashboards** — design and build monitoring dashboards via the Datadog UI in the kiosk browser, arranging widgets, setting queries, and configuring alerts visually.
 - **Excalidraw diagrams** — draw architecture diagrams, flowcharts, and whiteboard sketches directly in Excalidraw running in the kiosk browser, using the browser tool to interact with the canvas.
 
+## Text-to-Speech via KittenTTS
+
+Lightweight local TTS using [KittenTTS](https://pypi.org/project/kittentts/) — a small ONNX-based engine that should run comfortably on the RPi 5. Package it with Nix:
+
+```nix
+{ pkgs }:
+
+pkgs.python311Packages.buildPythonPackage {
+  pname = "kittentts";
+  version = "0.1.0";
+
+  src = pkgs.fetchPypi {
+    pname = "kittentts";
+    version = "0.1.0";
+    sha256 = "...";
+  };
+
+  propagatedBuildInputs = with pkgs.python311Packages; [
+    numpy
+    soundfile
+    onnxruntime
+  ];
+}
+```
+
+Integrate as an OpenClaw skill with a `speak` tool that synthesizes text, writes a WAV file, and plays it via `pw-play`. Audio output goes through the USB speaker bar (MZ-631M) which is the default PipeWire sink. Could also hook into the gateway's built-in TTS providers (`tts.enable`, `tts.providers`) if the API supports custom backends.
+
 ## Audio I/O (Priority: STT first)
 
 **Speech-to-text is the top priority.** The user is far more comfortable speaking aloud than typing, and can easily read agent responses on the display — so TTS is nice-to-have but not critical.
