@@ -166,32 +166,11 @@ Teach the agent to:
 - **Datadog dashboards** — design and build monitoring dashboards via the Datadog UI in the kiosk browser, arranging widgets, setting queries, and configuring alerts visually.
 - **Excalidraw diagrams** — draw architecture diagrams, flowcharts, and whiteboard sketches directly in Excalidraw running in the kiosk browser, using the browser tool to interact with the canvas.
 
-## Text-to-Speech via KittenTTS
+## Text-to-Speech
 
-Lightweight local TTS using [KittenTTS](https://pypi.org/project/kittentts/) — a small ONNX-based engine that should run comfortably on the RPi 5. Package it with Nix:
+**Note:** OpenClaw core already includes a built-in TTS tool (`tts.enable`, `tts.providers`). Before building a custom solution, investigate whether the built-in TTS can be configured with a local backend (e.g. KittenTTS or Piper) so the agent can speak through the Pi's audio output natively.
 
-```nix
-{ pkgs }:
-
-pkgs.python311Packages.buildPythonPackage {
-  pname = "kittentts";
-  version = "0.1.0";
-
-  src = pkgs.fetchPypi {
-    pname = "kittentts";
-    version = "0.1.0";
-    sha256 = "...";
-  };
-
-  propagatedBuildInputs = with pkgs.python311Packages; [
-    numpy
-    soundfile
-    onnxruntime
-  ];
-}
-```
-
-Integrate as an OpenClaw skill with a `speak` tool that synthesizes text, writes a WAV file, and plays it via `pw-play`. Audio output goes through the USB speaker bar (MZ-631M) which is the default PipeWire sink. Could also hook into the gateway's built-in TTS providers (`tts.enable`, `tts.providers`) if the API supports custom backends.
+If a custom approach is still needed, [KittenTTS](https://pypi.org/project/kittentts/) is a lightweight ONNX-based engine that should run on the RPi 5. Integrate as a `speak` tool that synthesizes text, writes a WAV file, and plays it via `pw-play` through the default PipeWire sink.
 
 ## Audio I/O (Priority: STT first)
 
@@ -201,6 +180,21 @@ Integrate as an OpenClaw skill with a `speak` tool that synthesizes text, writes
 - **Hotword detection (research needed):** Would be awesome to have an always-on wake word (e.g. "Hey OpenClaw") so the user can just speak without pressing a button. Needs research — running Whisper continuously on an RPi 5 may be too heavy. Alternatives: lightweight hotword engines like openWakeWord, Porcupine, or Snowboy for the trigger, then hand off to Whisper for the actual transcription.
 - **TTS (lower priority):** Agent responses can be displayed on screen (via Eww overlay or browser). Audio output via PipeWire is available for when TTS is added later.
 - Tools: `pw-record`/`pw-play`, whisper.cpp, browser Web Audio APIs.
+
+## Audio Transcription Tool (`audio_transcribe`)
+
+Give the agent an `audio_transcribe` tool that records from the microphone and transcribes the audio locally using whisper.cpp. This combines the existing `audio_record` tool with a transcription step — record N seconds, pipe the WAV through `whisper-cli`, and return the text.
+
+This enables the agent to listen to the user on demand ("what did I just say?", "listen for 10 seconds and tell me what you hear") without requiring a persistent voice pipeline or wake word. The agent decides when to listen based on conversation context.
+
+**Implementation:**
+1. Record via `pw-record` (already in `audio_record`)
+2. Run `whisper-cli -m <model> -l <lang> --no-gpu <wav-file>` on the recording
+3. Return the transcription text
+
+**Dependencies:** `whisper-cpp` and the whisper model are already installed when `services.clawpi.audio.enable = true`. The tool should check if whisper is available and return a clear error if not.
+
+**Difference from the voice pipeline:** The voice pipeline (hotword → continuous STT) is an always-on input channel. This tool is on-demand — the agent explicitly chooses to listen, making it useful for one-off tasks like "record what I say and summarize it" or "transcribe the ambient conversation".
 
 ## File Transfer Channel
 
