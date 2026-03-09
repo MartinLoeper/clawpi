@@ -2,6 +2,7 @@
 (defvar clawpi_state "idle")
 (defvar clawpi_tool_name "")
 (defvar clawpi_message "")
+(defvar clawpi_tts_playing false)
 
 (defwidget status-indicator []
   (box :class "status-container status-${clawpi_state}"
@@ -22,6 +23,13 @@
                   clawpi_state == "error" ? clawpi_message :
                   clawpi_state == "disconnected" ? "Reconnecting..." : ""})))
 
+(defwidget tts-stop-button []
+  (button :class "tts-stop-btn"
+          :onclick "curl -sf -X POST http://localhost:3100/api/tts/stop >/dev/null 2>&1"
+    (box :space-evenly false
+      (label :class "tts-stop-icon" :text "⏹")
+      (label :class "tts-stop-text" :text "Stop"))))
+
 (defwindow status-overlay
   :monitor 0
   :geometry (geometry :x "10px"
@@ -34,3 +42,16 @@
   :focusable false
   :namespace "clawpi-overlay"
   (status-indicator))
+
+(defwindow tts-stop-overlay
+  :monitor 0
+  :geometry (geometry :x "10px"
+                      :y "10px"
+                      :width "120px"
+                      :height "50px"
+                      :anchor "bottom right")
+  :stacking "overlay"
+  :exclusive false
+  :focusable true
+  :namespace "clawpi-tts-stop"
+  (tts-stop-button))

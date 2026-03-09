@@ -20,6 +20,7 @@ ClawPi ships an OpenClaw plugin (`clawpi-tools`) that gives the agent hardware c
 | `audio_transcribe` | Audio | `seconds?`, `language?` | Record and transcribe speech via whisper.cpp |
 | `audio_play` | Audio | `path` | Play an audio file through the speakers |
 | `tts_hq` | Audio | `text`, `voice?`, `model?` | High-quality TTS via ElevenLabs API |
+| `tts_stop` | Audio | — | Stop any currently playing audio |
 | `tts_hq_voices` | Audio | `search?`, `voice_type?`, `page_size?` | Search and list ElevenLabs voices |
 | `screenshot_display` | Screenshot | — | Full compositor screenshot (grim) |
 | `screenshot_browser` | Screenshot | `format?`, `quality?` | Browser viewport screenshot (CDP) |
@@ -177,6 +178,18 @@ Generate high-quality speech from text using the ElevenLabs cloud TTS API. Retur
 |-------|---------|---------|-----------|
 | `eleven_multilingual_v2` | Standard | Best | 29 languages |
 | `eleven_turbo_v2_5` | Low | Good | 32 languages |
+
+### `tts_stop`
+
+Stop any currently playing audio by killing the `pw-play` process. Also hides the Eww stop button overlay.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| *(none)* | | |
+
+**Returns:** Confirmation message.
+
+**How it works:** Calls `POST /api/tts/stop` on the clawpi daemon, which runs `pkill -f pw-play` and hides the stop button overlay.
 
 ### `tts_hq_voices`
 

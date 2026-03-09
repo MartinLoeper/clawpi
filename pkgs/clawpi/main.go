@@ -21,20 +21,19 @@ func main() {
 		log.Fatalf("config: %v", err)
 	}
 
-	// Start web server early so the landing page is available
-	// even if eww or gateway setup fails
-	go func() {
-		if err := web.Serve(cfg.WebAddr); err != nil {
-			log.Fatalf("web server: %v", err)
-		}
-	}()
-
 	ewwConfigDir := os.Getenv("CLAWPI_EWW_CONFIG")
 	if ewwConfigDir == "" {
 		log.Fatal("CLAWPI_EWW_CONFIG not set")
 	}
 
 	ctrl := eww.NewController(ewwConfigDir)
+
+	// Start web server with controller for TTS API
+	go func() {
+		if err := web.Serve(cfg.WebAddr, ctrl); err != nil {
+			log.Fatalf("web server: %v", err)
+		}
+	}()
 
 	client := gateway.NewClient(cfg.GatewayURL, cfg.Token)
 	client.Debug = cfg.Debug

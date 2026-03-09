@@ -60,6 +60,16 @@ func (c *Controller) SetMessage(msg string) {
 	c.update("clawpi_message", msg)
 }
 
+func (c *Controller) SetTTSPlaying(playing bool) {
+	if playing {
+		c.update("clawpi_tts_playing", "true")
+		c.ewwCmd("open", "tts-stop-overlay")
+	} else {
+		c.update("clawpi_tts_playing", "false")
+		c.ewwCmd("close", "tts-stop-overlay")
+	}
+}
+
 func (c *Controller) update(variable, value string) {
 	arg := fmt.Sprintf("%s=%s", variable, value)
 	if err := c.ewwCmd("update", arg); err != nil {

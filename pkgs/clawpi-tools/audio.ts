@@ -389,30 +389,52 @@ export default function (api: any) {
         return text(`Error: file not found: ${filePath}`);
       }
 
+      // Notify daemon to show stop button
+      await fetch("http://localhost:3100/api/tts/playing", { method: "POST" }).catch(() => {});
+
       const isWav = filePath.endsWith(".wav");
 
-      if (isWav) {
-        // Play WAV directly
-        await run("pw-play", [filePath]);
-        return text(`Played: ${filePath}`);
-      }
-
-      // Convert to WAV via ffmpeg, then play
-      const tmpWav = `/tmp/clawpi-play-${randomBytes(4).toString("hex")}.wav`;
       try {
-        await run("ffmpeg", [
-          "-i", filePath,
-          "-ar", "44100",
-          "-ac", "2",
-          "-f", "wav",
-          "-y",
-          tmpWav,
-        ]);
-        await run("pw-play", [tmpWav]);
+        if (isWav) {
+          await run("pw-play", [filePath]);
+        } else {
+          // Convert to WAV via ffmpeg, then play
+          const tmpWav = `/tmp/clawpi-play-${randomBytes(4).toString("hex")}.wav`;
+          try {
+            await run("ffmpeg", [
+              "-i", filePath,
+              "-ar", "44100",
+              "-ac", "2",
+              "-f", "wav",
+              "-y",
+              tmpWav,
+            ]);
+            await run("pw-play", [tmpWav]);
+          } finally {
+            await unlink(tmpWav).catch(() => {});
+          }
+        }
         return text(`Played: ${filePath}`);
       } finally {
-        await unlink(tmpWav).catch(() => {});
+        // Hide stop button when playback ends (naturally or via error)
+        await fetch("http://localhost:3100/api/tts/stopped", { method: "POST" }).catch(() => {});
       }
+    },
+  });
+
+  // ── Audio: stop playback ──────────────────────────────────────────
+  api.registerTool({
+    name: "tts_stop",
+    description:
+      "Stop any currently playing audio (kills pw-play). " +
+      "Use this when the user asks to stop speaking, be quiet, or shut up.",
+    parameters: Type.Object({}),
+    async execute() {
+      const resp = await fetch("http://localhost:3100/api/tts/stop", { method: "POST" });
+      if (!resp.ok) {
+        return text(`Error: stop endpoint returned ${resp.status}`);
+      }
+      return text("Playback stopped.");
     },
   });
 

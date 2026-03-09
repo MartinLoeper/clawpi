@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.8.0
+
+- Add `tts_stop` tool — stop audio playback by killing pw-play
+- `audio_play` now shows Eww stop button during playback and hides it when done
+- Go backend: add `/api/tts/playing`, `/api/tts/stop`, `/api/tts/stopped` endpoints
+- Eww: add `tts-stop-overlay` window with stop button in bottom-right corner
+
 ## 0.7.1
 
 - Note in `tts_hq` description that the default voice speaks Schwäbisch
