@@ -50,6 +50,8 @@ The deploy builds the NixOS closure locally (cross-compiled for aarch64) and cop
   ssh nixos@<host> "sudo \$(readlink -f /nix/var/nix/profiles/system)/specialisation/kiosk/bin/switch-to-configuration switch"
   # Then restart cage since switch-to-configuration skips it:
   ssh nixos@<host> sudo systemctl restart cage-tty1
+  # Verify openclaw-gateway is running (may need manual start after spec switch):
+  ssh nixos@<host> "sudo -u kiosk XDG_RUNTIME_DIR=/run/user/\$(id -u kiosk) systemctl --user start openclaw-gateway"
   ```
 - **File structure:**
   - `modules/base.nix` — system config (boot, users, networking, PipeWire, Avahi, SSH)
