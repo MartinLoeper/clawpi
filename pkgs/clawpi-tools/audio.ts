@@ -347,4 +347,58 @@ export default function (api: any) {
       }
     },
   });
+
+  // ── Audio: play ────────────────────────────────────────────────────
+  api.registerTool({
+    name: "audio_play",
+    description:
+      "Play an audio file through the default audio output (speakers). " +
+      "Supports WAV, MP3, OGG, FLAC, and other common formats. " +
+      "Non-WAV formats are automatically converted via ffmpeg before playback. " +
+      "Use this after the tts tool to play generated speech through the Pi's speakers " +
+      "— the tts tool outputs an MP3 file path (e.g. /tmp/openclaw/tts-.../voice-*.mp3), " +
+      "pass that path to this tool to make it audible on the display.",
+    parameters: Type.Object({
+      path: Type.String({
+        description:
+          "Absolute path to the audio file to play (e.g. /tmp/openclaw/tts-.../voice-*.mp3)",
+      }),
+    }),
+    async execute(_id: string, params: { path: string }) {
+      const filePath = params.path;
+
+      // Check if file exists
+      try {
+        await readFile(filePath, { flag: "r" }).then(() => {});
+        // Just check access, don't read the whole file
+      } catch {
+        return text(`Error: file not found: ${filePath}`);
+      }
+
+      const isWav = filePath.endsWith(".wav");
+
+      if (isWav) {
+        // Play WAV directly
+        await run("pw-play", [filePath]);
+        return text(`Played: ${filePath}`);
+      }
+
+      // Convert to WAV via ffmpeg, then play
+      const tmpWav = `/tmp/clawpi-play-${randomBytes(4).toString("hex")}.wav`;
+      try {
+        await run("ffmpeg", [
+          "-i", filePath,
+          "-ar", "44100",
+          "-ac", "2",
+          "-f", "wav",
+          "-y",
+          tmpWav,
+        ]);
+        await run("pw-play", [tmpWav]);
+        return text(`Played: ${filePath}`);
+      } finally {
+        await unlink(tmpWav).catch(() => {});
+      }
+    },
+  });
 }

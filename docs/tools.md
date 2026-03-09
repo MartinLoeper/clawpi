@@ -18,6 +18,7 @@ ClawPi ships an OpenClaw plugin (`clawpi-tools`) that gives the agent hardware c
 | `audio_set_default_source` | Audio | `source_id` | Switch default audio input by source ID |
 | `audio_record` | Audio | `seconds?` (1–30) | Record audio from mic, returns WAV |
 | `audio_transcribe` | Audio | `seconds?`, `language?` | Record and transcribe speech via whisper.cpp |
+| `audio_play` | Audio | `path` | Play an audio file through the speakers |
 | `screenshot_display` | Screenshot | — | Full compositor screenshot (grim) |
 | `screenshot_browser` | Screenshot | `format?`, `quality?` | Browser viewport screenshot (CDP) |
 
@@ -130,6 +131,20 @@ Record audio from the microphone and transcribe it locally using whisper.cpp. Co
 **Returns:** Transcription text, or a "no speech detected" message.
 
 **How it works:** Records via `pw-record`, then runs `whisper-cli` with the model and language from the gateway's `openclaw.json` config. The whisper model path is read dynamically from the config so it stays in sync with the Nix configuration.
+
+### `audio_play`
+
+Play an audio file through the default audio output (speakers). Supports WAV, MP3, OGG, FLAC, and other common formats. Non-WAV formats are converted via ffmpeg before playback.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `path` | string | yes | Absolute path to the audio file |
+
+**Returns:** Confirmation message.
+
+**How it works:** WAV files are played directly via `pw-play`. Other formats (MP3, OGG, etc.) are first converted to WAV with `ffmpeg`, then played.
+
+**TTS integration:** The built-in `tts` tool generates speech as an MP3 file (e.g. `/tmp/openclaw/tts-.../voice-*.mp3`) and sends it as a Telegram voice message. To also play it through the Pi's speakers, the agent can call `audio_play` with the TTS output path.
 
 ## Screenshots
 
