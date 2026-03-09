@@ -67,6 +67,11 @@ The deploy builds the NixOS closure locally (cross-compiled for aarch64) and cop
 - **Flake input:** `nix-openclaw` (`github:MartinLoeper/nix-openclaw/main`)
 - **Kiosk URL:** `http://localhost:18789` (Chromium points here in kiosk mode)
 
+## Writing Skills and Agent Instructions
+
+- Skills (`.claude/skills/`) and CLAUDE.md must be **generic** — no user-specific paths, credentials, CLI wrappers, or machine-specific details.
+- User-specific information (e.g. custom CLI wrappers like `mloeper-hcloud`, SSH key names, server IPs) belongs in **dynamic Claude memory** (auto-memory `MEMORY.md`), not in checked-in files.
+
 ## NixOS Specifics
 
 - Bootloader: `"kernel"` (RPi kernel-based, supports generational rollback)
