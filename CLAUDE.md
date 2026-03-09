@@ -70,6 +70,7 @@ The deploy builds the NixOS closure locally (cross-compiled for aarch64) and cop
 - **Auth token:** auto-generated at first boot, retrieve with `./scripts/gateway-token.sh`
 - **Flake input:** `nix-openclaw` (`github:MartinLoeper/nix-openclaw/main`)
 - **Kiosk URL:** `http://localhost:18789` (Chromium points here in kiosk mode)
+- **Logs:** `sudo tail -200 /tmp/openclaw/openclaw-gateway.log` on the Pi (not journalctl — stdout goes to file)
 - **Browser:** agent reuses the kiosk Chromium via CDP (`attachOnly`, port `9222`)
 - **Port forwarding:** access the gateway from your machine via SSH tunnel:
   ```sh

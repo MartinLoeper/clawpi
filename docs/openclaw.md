@@ -89,3 +89,40 @@ ssh nixos@openclaw-rpi5.local cat /tmp/openclaw/openclaw-gateway.log
 # Retrieve the gateway token
 ./scripts/gateway-token.sh
 ```
+
+## Agent Tools (laptop-side)
+
+These scripts run Docker containers on your workstation to give the agent secure, authenticated access to services it can't run on the Pi itself. Each generates random credentials at startup and prints connection details to hand to the agent.
+
+### File Drop (SFTP)
+
+**Script:** `./scripts/file-drop.sh [port]`
+
+Starts a containerized SFTP server (`atmoz/sftp`) so the agent can send files from the Pi to your laptop — screenshots, logs, recordings, etc. Files land in `/tmp/openclaw-drop`.
+
+- **Port:** `2222` (default, configurable)
+- **Auth:** random password generated at startup (printed in output)
+- **Agent usage:** `sshpass -p '<password>' sftp -P 2222 -o StrictHostKeyChecking=no drop@<laptop-ip>:/upload/`
+
+The agent authenticates with the one-time password. No persistent credentials are stored on the Pi.
+
+### Email Relay (Gmail SMTP)
+
+**Script:** `./scripts/email-relay.sh <recipient-email> [port]`
+
+Starts a restricted HTTP→Gmail SMTP relay so the agent can email the user — dashboard summaries, screenshots, alerts, etc.
+
+- **Port:** `8025` (default, configurable)
+- **Auth:** random Bearer token generated at startup (printed in output)
+- **Recipient restriction:** only the email address given at startup is allowed — the agent cannot email anyone else
+- **Attachments:** supported via base64-encoded JSON (`data_base64` field)
+- **Gmail credentials:** prompted interactively, passed via a temp env file (deleted after container starts, not visible in `docker inspect`)
+- **Agent usage:**
+  ```sh
+  curl -X POST http://<laptop-ip>:8025/send \
+    -H 'Authorization: Bearer <token>' \
+    -H 'Content-Type: application/json' \
+    -d '{"subject":"Hello","body":"From OpenClaw","attachments":[{"filename":"shot.png","data_base64":"..."}]}'
+  ```
+
+Both tools are designed so the agent never handles raw credentials — it only receives the generated one-time tokens/passwords needed to use the service.
