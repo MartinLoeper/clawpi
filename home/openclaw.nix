@@ -83,7 +83,7 @@ in
       };
       plugins = {
         enabled = true;
-        allow = [ "clawpi-tools" ];
+        allow = [ "clawpi-tools" "memory-core" ];
         load.paths = [
           "${pkgs.clawpi-tools}/lib/clawpi-tools"
         ];
