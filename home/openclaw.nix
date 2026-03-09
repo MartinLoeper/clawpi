@@ -1,6 +1,23 @@
 { pkgs, osConfig, lib, ... }:
 let
+  audioCfg = osConfig.services.clawpi.audio;
   tgCfg = osConfig.services.clawpi.telegram;
+
+  whisperModel = pkgs.whisper-model.override { model = audioCfg.model; };
+
+  # Build audio.transcription config when enabled.
+  audioConfig = lib.mkIf audioCfg.enable {
+    transcription = {
+      command = [
+        "${pkgs.whisper-cpp}/bin/whisper-cli"
+        "-m" "${whisperModel}"
+        "-l" audioCfg.language
+        "-np"
+        "--no-gpu"
+      ];
+      timeoutSeconds = audioCfg.timeoutSeconds;
+    };
+  };
 
   # Build the channels.telegram attrset only when enabled.
   telegramChannel = lib.mkIf tgCfg.enable {
@@ -32,6 +49,7 @@ in
       gateway = {
         mode = "local";
       };
+      audio = audioConfig;
       channels.telegram = telegramChannel;
       browser = {
         attachOnly = true;

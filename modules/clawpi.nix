@@ -30,6 +30,33 @@ in
       };
     };
 
+    audio = {
+      enable = lib.mkEnableOption "audio transcription via whisper.cpp";
+
+      model = lib.mkOption {
+        type = lib.types.enum [ "tiny" "base" "small" ];
+        default = "base";
+        description = ''
+          Whisper model size. Trade-offs on RPi 5:
+          - tiny:  fast (~0.3x real-time), lower accuracy
+          - base:  balanced (~0.7x real-time), good for commands + sentences
+          - small: slow (~2-3x real-time), best accuracy
+        '';
+      };
+
+      language = lib.mkOption {
+        type = lib.types.str;
+        default = "auto";
+        description = "Spoken language code (e.g. 'en', 'de') or 'auto' for auto-detect.";
+      };
+
+      timeoutSeconds = lib.mkOption {
+        type = lib.types.int;
+        default = 60;
+        description = "Timeout in seconds for transcription.";
+      };
+    };
+
     telegram = {
       enable = lib.mkEnableOption "Telegram channel for the OpenClaw agent";
 
@@ -117,7 +144,12 @@ in
     };
   };
 
-  config = lib.mkIf cfg.debug {
-    environment.systemPackages = [ pkgs.alsa-utils ];
-  };
+  config = lib.mkMerge [
+    (lib.mkIf cfg.debug {
+      environment.systemPackages = [ pkgs.alsa-utils ];
+    })
+    (lib.mkIf cfg.audio.enable {
+      environment.systemPackages = [ pkgs.whisper-cpp ];
+    })
+  ];
 }

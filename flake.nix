@@ -62,11 +62,12 @@
       # For ongoing deploys via nixos-rebuild (./deploy.sh)
       nixosConfigurations.rpi5 = nixos-raspberrypi.lib.nixosSystem commonArgs;
 
-      # With Telegram channel enabled
+      # With Telegram channel + audio transcription enabled
       nixosConfigurations.rpi5-telegram = nixos-raspberrypi.lib.nixosSystem {
         specialArgs = commonArgs.specialArgs;
         modules = commonArgs.modules ++ [
           {
+            services.clawpi.audio.enable = true;
             services.clawpi.telegram = {
               enable = true;
 
@@ -97,6 +98,7 @@
         modules = commonArgs.modules ++ [
           {
             services.clawpi.debug = true;
+            services.clawpi.audio.enable = true;
             services.clawpi.telegram = {
               enable = true;
 

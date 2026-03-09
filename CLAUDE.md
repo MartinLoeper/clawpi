@@ -28,6 +28,8 @@ The deploy builds the NixOS closure locally (cross-compiled for aarch64) and cop
 
 ## Nix Build Rules
 
+**CRITICAL: `git add` new files before running any `nix` command.** Nix flakes only see paths that are tracked (staged) in git. If you create a new `.nix` file and reference it without staging it first, the build will fail with "path does not exist".
+
 **CRITICAL: NEVER pipe build output through `tail`, `head`, or any filter.** These swallow build progress and make long builds appear stuck. Always let output stream directly.
 
 - **Always** pass `--show-trace -L` (or `--print-build-logs`) to `nix build` commands so build progress is visible.
