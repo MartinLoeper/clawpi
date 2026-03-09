@@ -44,6 +44,7 @@
               ./home/openclaw.nix
               ./home/clawpi.nix
               ./home/labwc.nix
+              ./home/voice.nix
             ];
             home.stateVersion = "25.05";
           };
@@ -51,6 +52,7 @@
         ./modules/base.nix
         ./modules/kiosk.nix
         ./modules/clawpi.nix
+        ./modules/voice.nix
       ];
 
       commonArgs = {
