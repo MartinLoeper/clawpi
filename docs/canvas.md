@@ -85,7 +85,7 @@ The directory is created automatically by the Go backend at startup via `os.Mkdi
 
 ### Archive
 
-When `canvas_reset` is called, the current canvas contents are moved into a timestamped subdirectory under the **archive directory** (`/var/lib/kiosk/.openclaw/canvas-archive`). The archive is always persistent — it survives reboots regardless of the `canvas.tmpfs` setting.
+When `canvas_archive` is called, the current canvas contents are moved into a timestamped subdirectory under the **archive directory** (`/var/lib/kiosk/.openclaw/canvas-archive`). The archive is always persistent — it survives reboots regardless of the `canvas.tmpfs` setting.
 
 The archive subdirectory is named with a short descriptive slug (e.g. `weather-dashboard`, `photo-gallery`). The agent chooses the name based on the project content. Names use lowercase, dashes, no spaces.
 
@@ -100,7 +100,7 @@ Six tools give the agent full control over the canvas lifecycle:
 | `canvas_folder` | Returns the workspace path and usage instructions (no side effects) |
 | `canvas_open` | Navigates kiosk Chromium to `http://localhost:3100/canvas/{path}` via CDP |
 | `canvas_close` | Navigates back to the landing page (`http://localhost:3100`) |
-| `canvas_reset` | Archives current canvas contents, then clears the workspace |
+| `canvas_archive` | Archives current canvas contents, then clears the workspace |
 | `canvas_list_archive` | Lists all archived projects in the archive directory |
 | `canvas_restore` | Archives the current canvas (if non-empty), then restores a project from the archive |
 
@@ -112,13 +112,13 @@ Six tools give the agent full control over the canvas lifecycle:
 4. User sees the content on the kiosk display
 5. Agent can update files and call `canvas_open` again to reload
 6. Agent calls `canvas_close` to return to the home screen
-7. When starting a **new** project, agent calls `canvas_reset` to archive and clear
+7. When starting a **new** project, agent calls `canvas_archive` to archive and clear
 
 #### Starting a new task
 
 When the user asks to build something new, the agent should:
 - If the canvas already has content, **ask the user** whether they want to modify the existing project or start a new one — do not assume.
-- If it is clear that a completely new project starts, call `canvas_reset` (which archives the current content first).
+- If it is clear that a completely new project starts, call `canvas_archive` (which archives the current content first).
 - If the user wants to keep both the old and new project, archive first, then start fresh.
 
 #### Restoring an archived project

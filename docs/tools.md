@@ -24,6 +24,12 @@ ClawPi ships an OpenClaw plugin (`clawpi-tools`) that gives the agent hardware c
 | `tts_hq_voices` | Audio | `search?`, `voice_type?`, `page_size?` | Search and list ElevenLabs voices |
 | `screenshot_display` | Screenshot | — | Full compositor screenshot (grim) |
 | `screenshot_browser` | Screenshot | `format?`, `quality?` | Browser viewport screenshot (CDP) |
+| `canvas_folder` | Canvas | — | Get canvas workspace path and usage instructions |
+| `canvas_open` | Canvas | `path?` | Navigate kiosk Chromium to canvas content via CDP |
+| `canvas_close` | Canvas | — | Navigate back to the landing page |
+| `canvas_archive` | Canvas | `name` | Archive current canvas project, then clear workspace |
+| `canvas_list_archive` | Canvas | — | List all archived canvas projects |
+| `canvas_restore` | Canvas | `name` | Archive current canvas (if any), restore a project from archive |
 
 ## Audio
 
@@ -241,6 +247,96 @@ Capture the Chromium browser viewport via CDP (Chrome DevTools Protocol, port 92
 **Returns:** Image in the requested format.
 
 **How it works:** Connects to Chromium's CDP WebSocket at `127.0.0.1:9222`, finds the first page target, and calls `Page.captureScreenshot`.
+
+## Canvas
+
+The canvas tools give the agent a writable workspace for building static web content (HTML, CSS, JS) that is displayed on the kiosk screen. Files are served at `http://localhost:3100/canvas/`. See `docs/canvas.md` for architecture and storage details.
+
+**Important agent behavior:**
+- **Never move files directly** into the archive directory. Always use the `canvas_archive` tool — it handles creating the subdirectory and moving files.
+- When starting a completely new task, always call `canvas_archive` first to archive the current project.
+- If it is unclear whether the user wants to modify the existing project or start fresh, **ask the user** — do not assume.
+
+### `canvas_folder`
+
+Get the canvas workspace directory path and usage instructions. Call this first to know where to write files.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| *(none)* | | |
+
+**Returns:** The absolute path to the canvas workspace directory, the base URL where files are served (`http://localhost:3100/canvas/`), and instructions for creating web content.
+
+### `canvas_open`
+
+Navigate the kiosk Chromium browser to canvas content via CDP. Use after writing files to the canvas directory.
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `path` | string | no | `"index.html"` | Relative path within the canvas directory to navigate to |
+
+**Returns:** Confirmation with the URL navigated to.
+
+**How it works:** Connects to Chromium's CDP WebSocket at `127.0.0.1:9222` and sends `Page.navigate` to `http://localhost:3100/canvas/{path}`.
+
+### `canvas_close`
+
+Navigate the kiosk Chromium browser back to the landing page.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| *(none)* | | |
+
+**Returns:** Confirmation message.
+
+**How it works:** CDP `Page.navigate` to `http://localhost:3100`.
+
+### `canvas_archive`
+
+Archive the current canvas project. Creates a new subdirectory with the given `name` in the archive directory, moves all canvas files into it, and clears the workspace. This is the **only** way to archive — never move files to the archive directory manually.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `name` | string | yes | Short descriptive name for the project. Use lowercase, dashes, no spaces (e.g. `weather-dashboard`, `photo-gallery`, `clock-widget`). |
+
+**Returns:** Confirmation with the archive path (e.g. `canvas-archive/weather-dashboard/`).
+
+**How it works:**
+1. Creates `<archive-dir>/<name>/` as a new subdirectory
+2. Moves **all** files and directories from the canvas directory into that subdirectory
+3. If a project with that name already exists in the archive, appends a numeric suffix (e.g. `weather-dashboard-2`)
+4. The canvas directory is now empty and ready for new content
+
+The tool always archives **everything** in the canvas directory — there is no way to archive a subset. If you need to keep some files while archiving others, move the files you want to keep to a temporary location first (e.g. `/tmp/canvas-stash/`), call `canvas_archive`, then move them back.
+
+**When to call:** Always call this before starting a new project. If the canvas is already empty, the tool is a no-op (nothing to archive). If unsure whether the user wants a new project or a modification of the current one, ask first.
+
+### `canvas_list_archive`
+
+List all archived canvas projects. Shows project names and allows the user to choose one to restore.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| *(none)* | | |
+
+**Returns:** List of archived project directory names (e.g. `weather-dashboard`, `photo-gallery`).
+
+### `canvas_restore`
+
+Restore an archived project back into the active canvas workspace. If the canvas currently has content, the tool **automatically archives it first** (prompts for a name) to avoid losing work.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `name` | string | yes | Name of the archived project to restore (as shown by `canvas_list_archive`) |
+
+**Returns:** Confirmation message.
+
+**How it works:**
+1. If the canvas directory is non-empty, archives the current project first (agent must provide a name for it)
+2. Moves the named project from the archive back into the canvas directory
+3. The project is now live and served at `http://localhost:3100/canvas/`
+
+Call `canvas_open` after restoring to navigate the browser to the restored content.
 
 ## Planned Tools
 
