@@ -74,6 +74,7 @@
             services.clawpi.audio.enable = true;
             services.clawpi.audio.groq.enable = true;
             services.clawpi.elevenlabs.enable = true;
+            services.clawpi.voice.enable = true;
             services.clawpi.telegram = {
               enable = true;
 
@@ -109,6 +110,7 @@
             services.clawpi.audio.enable = true;
             services.clawpi.audio.groq.enable = true;
             services.clawpi.elevenlabs.enable = true;
+            services.clawpi.voice.enable = true;
             services.clawpi.telegram = {
               enable = true;
 

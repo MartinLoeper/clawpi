@@ -37,7 +37,6 @@ python3Packages.buildPythonPackage rec {
 
   propagatedBuildInputs = with python3Packages; [
     onnxruntime
-    ai-edge-litert
     tqdm
     scipy
     scikit-learn
