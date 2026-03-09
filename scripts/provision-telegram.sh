@@ -36,7 +36,7 @@ fi
 
 echo ""
 echo "Writing token to ${TARGET_HOST}:${TOKEN_PATH}..."
-${SSH} "sudo mkdir -p /var/lib/clawpi && echo -n '${BOT_TOKEN}' | sudo tee ${TOKEN_PATH} > /dev/null && sudo chmod 600 ${TOKEN_PATH}"
+${SSH} "sudo mkdir -p /var/lib/clawpi && echo -n '${BOT_TOKEN}' | sudo tee ${TOKEN_PATH} > /dev/null && sudo chown kiosk:kiosk ${TOKEN_PATH} && sudo chmod 600 ${TOKEN_PATH}"
 echo "Done."
 
 echo ""
@@ -56,3 +56,8 @@ echo ""
 echo "2. Deploy: ./scripts/deploy.sh ${TARGET_HOST} --specialisation kiosk"
 echo ""
 echo "3. Verify: ssh nixos@${TARGET_HOST} sudo tail -50 /tmp/openclaw/openclaw-gateway.log"
+echo ""
+echo "4. Send a message to your bot on Telegram. With the default dmPolicy"
+echo "   (\"pairing\"), the bot will reply with a pairing code. Approve it:"
+echo ""
+echo "   ./scripts/approve-telegram.sh <PAIRING_CODE> ${TARGET_HOST}"

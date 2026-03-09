@@ -21,35 +21,40 @@ Run the provisioning script to write the token to the Pi:
 ./scripts/provision-telegram.sh [host]
 ```
 
-This writes the token to `/var/lib/clawpi/telegram-bot-token` on the Pi with mode 600 (root-only readable). The token **never** enters the Nix store or NixOS configuration — it stays on disk as a runtime secret.
+This writes the token to `/var/lib/clawpi/telegram-bot-token` on the Pi with mode 600, owned by the `kiosk` user. The token **never** enters the Nix store or NixOS configuration — it stays on disk as a runtime secret.
 
-### 3. Get Your User ID
+### 3. Enable in NixOS Config
 
-Message [@userinfobot](https://t.me/userinfobot) on Telegram — it replies with your user ID.
+```nix
+services.clawpi.telegram.enable = true;
+```
 
-### 4. Enable in NixOS Config
+Optionally restrict access to specific Telegram user IDs:
 
 ```nix
 services.clawpi.telegram = {
   enable = true;
-  allowFrom = [ 123456789 ];  # your Telegram user ID
+  allowFrom = [ 123456789 ];  # your Telegram user ID (from @userinfobot)
 };
 ```
 
-### 5. Deploy
+Without `allowFrom`, any Telegram user who finds your bot can request pairing.
+
+### 4. Deploy
 
 ```sh
 ./scripts/deploy.sh openclaw-rpi5.local --specialisation kiosk
 ```
 
-### 6. Verify
+### 5. Approve Pairing
+
+With the default `dmPolicy` (`"pairing"`), new users must be approved before they can chat. Send a message to your bot — it will reply with a pairing code (e.g. `RGQB2TEX`). Approve it:
 
 ```sh
-# Check gateway logs (Telegram channel connects at startup)
-ssh nixos@openclaw-rpi5.local sudo tail -50 /tmp/openclaw/openclaw-gateway.log
+./scripts/approve-telegram.sh <PAIRING_CODE> [host]
 ```
 
-Send a message to your bot — the agent should respond!
+After approval, the user can chat with the agent freely. Subsequent messages don't require re-approval.
 
 ## Group Chat Support
 

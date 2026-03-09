@@ -29,15 +29,10 @@ Telegram is handled by the **built-in OpenClaw channel** — no separate bridge 
 
 1. Create a bot via [@BotFather](https://t.me/BotFather) on Telegram
 2. Provision the token on the Pi: `./scripts/provision-telegram.sh [host]`
-3. Get your Telegram user ID: message [@userinfobot](https://t.me/userinfobot) on Telegram
-4. Enable in your NixOS config:
-   ```nix
-   services.clawpi.telegram = {
-     enable = true;
-     allowFrom = [ 123456789 ];  # your Telegram user ID
-   };
-   ```
-5. Deploy: `./scripts/deploy.sh openclaw-rpi5.local --specialisation kiosk`
+3. Enable in your NixOS config: `services.clawpi.telegram.enable = true;`
+4. Deploy: `./scripts/deploy.sh openclaw-rpi5.local --specialisation kiosk`
+5. Message the bot — it replies with a pairing code. Approve it:
+   `./scripts/approve-telegram.sh <CODE> [host]`
 
 ### Options
 
