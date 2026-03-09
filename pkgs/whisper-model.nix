@@ -8,7 +8,7 @@ let
     };
     base = {
       url = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin";
-      hash = "sha256-I7BYPG+IhJi7TFyClEcHCTqhGj0GA97E8LJnMJiLQ10=";
+      hash = "sha256-YO1bw90U7qhWST0zQ0m0BXgt3K8AKNS130CINF+6Lv4=";
     };
     small = {
       url = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin";
