@@ -523,4 +523,103 @@ export default function (api: any) {
       );
     },
   });
+
+  // ── ElevenLabs: list/search voices ──────────────────────────────
+  api.registerTool({
+    name: "tts_hq_voices",
+    description:
+      "Search and list available ElevenLabs voices. " +
+      "Returns voice IDs, names, and labels. Use this to find the right " +
+      "voice ID for the tts_hq tool.",
+    parameters: Type.Object({
+      search: Type.Optional(
+        Type.String({
+          description: "Search term to filter by name, description, or labels",
+        }),
+      ),
+      voice_type: Type.Optional(
+        Type.String({
+          description:
+            'Filter by type: "personal", "community", "default", "workspace", "saved"',
+        }),
+      ),
+      page_size: Type.Optional(
+        Type.Number({
+          description: "Max results to return (1–100, default 20)",
+          minimum: 1,
+          maximum: 100,
+        }),
+      ),
+    }),
+    async execute(
+      _id: string,
+      params: { search?: string; voice_type?: string; page_size?: number },
+    ) {
+      if (!ELEVENLABS_KEY_FILE) {
+        return text(
+          "Error: ElevenLabs is not enabled. " +
+          "Set services.clawpi.elevenlabs.enable = true in the NixOS config and redeploy.",
+        );
+      }
+
+      let apiKey: string | null = null;
+      try {
+        apiKey = (await readFile(ELEVENLABS_KEY_FILE, "utf-8")).trim() || null;
+      } catch {
+        // file missing or unreadable
+      }
+      if (!apiKey) {
+        return text(
+          "Error: ElevenLabs API key not found at " + ELEVENLABS_KEY_FILE + ". " +
+          "Provision it with: ./scripts/provision-elevenlabs.sh",
+        );
+      }
+
+      const queryParams = new URLSearchParams();
+      if (params.search) queryParams.set("search", params.search);
+      if (params.voice_type) queryParams.set("voice_type", params.voice_type);
+      queryParams.set("page_size", String(params.page_size ?? 20));
+
+      const url = `https://api.elevenlabs.io/v1/voices?${queryParams}`;
+      if (DEBUG) {
+        console.error(`[tts_hq_voices] GET ${url}`);
+      }
+
+      const resp = await fetch(url, {
+        headers: { "xi-api-key": apiKey },
+      });
+
+      if (!resp.ok) {
+        const errBody = await resp.text().catch(() => "");
+        return text(`Error: ElevenLabs API returned ${resp.status}: ${errBody}`);
+      }
+
+      const data = await resp.json() as {
+        voices?: Array<{
+          voice_id: string;
+          name: string;
+          category?: string;
+          labels?: Record<string, string>;
+          description?: string;
+        }>;
+        total_count?: number;
+      };
+
+      const voices = data.voices ?? [];
+      if (voices.length === 0) {
+        return text("No voices found matching the query.");
+      }
+
+      const lines = voices.map((v) => {
+        const labels = v.labels ? Object.values(v.labels).join(", ") : "";
+        return `- **${v.name}** (${v.voice_id}) [${v.category ?? "unknown"}]${labels ? ` — ${labels}` : ""}`;
+      });
+
+      const header = data.total_count != null
+        ? `Found ${data.total_count} voices (showing ${voices.length}):\n\n`
+        : "";
+
+      return text(header + lines.join("\n"));
+    },
+  });
 }

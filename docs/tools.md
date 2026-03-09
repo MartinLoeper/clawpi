@@ -20,6 +20,7 @@ ClawPi ships an OpenClaw plugin (`clawpi-tools`) that gives the agent hardware c
 | `audio_transcribe` | Audio | `seconds?`, `language?` | Record and transcribe speech via whisper.cpp |
 | `audio_play` | Audio | `path` | Play an audio file through the speakers |
 | `tts_hq` | Audio | `text`, `voice?`, `model?` | High-quality TTS via ElevenLabs API |
+| `tts_hq_voices` | Audio | `search?`, `voice_type?`, `page_size?` | Search and list ElevenLabs voices |
 | `screenshot_display` | Screenshot | — | Full compositor screenshot (grim) |
 | `screenshot_browser` | Screenshot | `format?`, `quality?` | Browser viewport screenshot (CDP) |
 
@@ -176,6 +177,18 @@ Generate high-quality speech from text using the ElevenLabs cloud TTS API. Retur
 |-------|---------|---------|-----------|
 | `eleven_multilingual_v2` | Standard | Best | 29 languages |
 | `eleven_turbo_v2_5` | Low | Good | 32 languages |
+
+### `tts_hq_voices`
+
+Search and list available ElevenLabs voices. Returns voice IDs, names, categories, and labels.
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `search` | string | no | — | Search term to filter by name, description, or labels |
+| `voice_type` | string | no | — | Filter: `"personal"`, `"community"`, `"default"`, `"workspace"`, `"saved"` |
+| `page_size` | number | no | 20 | Max results (1–100) |
+
+**Returns:** List of voices with IDs, names, categories, and labels.
 
 ## Screenshots
 
