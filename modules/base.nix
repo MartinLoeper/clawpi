@@ -26,12 +26,13 @@
     group = "kiosk";
     home = "/var/lib/kiosk";
     createHome = true;
+    shell = pkgs.bash;
     extraGroups = [ "video" "audio" ];
     linger = true;
   };
   users.groups.kiosk = { };
 
-  environment.systemPackages = with pkgs; [ openclaw-gateway vim ];
+  environment.systemPackages = with pkgs; [ openclaw-gateway sshpass vim ];
 
   hardware.graphics.enable = true;
 
