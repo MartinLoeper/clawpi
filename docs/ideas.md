@@ -183,3 +183,14 @@ Set up a [Cachix](https://www.cachix.org/) cache for the project so community us
 - **Flake nixConfig** — add the Cachix cache to `extra-substituters` and `extra-trusted-public-keys` in `flake.nix` so users get cache hits automatically on `nix build` without any manual config.
 - **README instructions** — document that builds are cached and should complete in minutes, not hours. This is a key selling point for community adoption: `nix build` just works, no ARM hardware or cloud accounts needed.
 - **Cache scope** — cache the full system closure (`nixosConfigurations.rpi5`) and the SD image (`installerImages.rpi5`) so both deploy and first-install paths are fast.
+
+## Developer Machine Prerequisites
+
+Document the required setup on the developer's workstation before they can build, flash, or deploy. The README currently assumes a working Nix environment but doesn't spell out all the pieces:
+
+- **Nix daemon** — multi-user Nix installation with the daemon running (`nix-daemon.service`)
+- **Flakes enabled** — `experimental-features = nix-command flakes` in `nix.conf`
+- **aarch64 emulation** — `boot.binfmt.emulatedSystems = [ "aarch64-linux" ]` (already mentioned, but should be part of a unified prerequisites section)
+- **Disk space** — cross-compiled closures are large; document a rough minimum (e.g. ~20 GB free in `/nix/store`)
+- **SSH** — `ssh` client for deploys, `ssh-copy-id` for initial key setup
+- **Optional tools** — `bmaptool` for fast flashing, Docker for PinchChat / agent tools
