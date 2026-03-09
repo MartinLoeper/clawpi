@@ -10,7 +10,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 TARGET_HOST="${1:-openclaw-rpi5.local}"
 TARGET_USER="nixos"
-FLAKE_ATTR="rpi5"
+FLAKE_ATTR="${FLAKE_ATTR:-rpi5}"
 KEY_FILE="${SCRIPT_DIR}/../id_ed25519_rpi5"
 REMOTE_CACHE="${REMOTE_CACHE:-}"
 

@@ -37,6 +37,7 @@
         {
           home-manager.useGlobalPkgs = true;
           home-manager.useUserPackages = true;
+          home-manager.backupFileExtension = "hm-backup";
           home-manager.users.kiosk = {
             imports = [
               nix-openclaw.homeManagerModules.openclaw
