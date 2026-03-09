@@ -9,13 +9,12 @@ let
   # The typed Nix config schema doesn't expose tools.media.models, so we
   # patch openclaw.json via ExecStartPre before the gateway reads it.
   whisperMediaConfig = builtins.toJSON {
-    tools.media = {
-      audio.language = audioCfg.language;
+    tools.media.audio = {
+      enabled = true;
+      language = audioCfg.language;
       models = [
         {
           type = "cli";
-          provider = "whisper.cpp";
-          id = "whisper-${audioCfg.model}";
           command = "${pkgs.whisper-cpp}/bin/whisper-cli";
           args = [
             "-m" "${whisperModel}"
@@ -23,7 +22,6 @@ let
             "-np"
             "--no-gpu"
           ];
-          capabilities = [ "audio" ];
           timeoutSeconds = audioCfg.timeoutSeconds;
         }
       ];
