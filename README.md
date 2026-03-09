@@ -3,7 +3,7 @@
 A Raspberry Pi 5 + 10" touchscreen that acts as a voice-controlled AI dashboard appliance. Say "hey claw", describe what you want, and the [OpenClaw gateway](https://github.com/MartinLoeper/nix-openclaw) builds and displays it — no coding required.
 
 1. **OpenClaw gateway** runs on the Pi, generating dashboards on `localhost:18789`
-2. **Kiosk mode** (Cage + Chromium) shows them fullscreen on the wired display
+2. **Kiosk mode** (labwc + Chromium) shows them fullscreen on the wired display
 3. **Voice wake** ("openclaw", "claude", "computer") triggers dashboard creation
 4. **Talk mode** lets you refine dashboards through continuous conversation
 5. **Claude Max** powers the AI — just a subscription, no API keys
@@ -18,16 +18,28 @@ NixOS configuration built on [nixos-raspberrypi](https://github.com/nvmd/nixos-r
 
 See [docs/getting-started.md](docs/getting-started.md) for prerequisites, initial setup, and first boot instructions. For ongoing deploys, see [docs/deployment.md](docs/deployment.md).
 
+## Pinned Versions
+
+The `flake.lock` pins all upstream dependencies. Key versions:
+
+| Dependency | Pinned revision | Gateway version | Date |
+|------------|----------------|-----------------|------|
+| [nix-openclaw](https://github.com/MartinLoeper/nix-openclaw) | [`5b6654e`](https://github.com/MartinLoeper/nix-openclaw/commit/5b6654e753ccbd1d16fb74621f1e5a4a4082c10a) | 2026.3.7 | 2026-03-07 |
+
+To update: `nix flake update nix-openclaw` then redeploy.
+
 ## Flake Structure
 
-| Config | Builder | Purpose |
-|--------|---------|---------|
-| `nixosConfigurations.rpi5` | `nixosSystem` | Remote deploys via `nixos-rebuild` |
-| `nixosConfigurations.rpi5-installer` | `nixosSystem` + sd-image | Flashable SD card images |
+| Config | Purpose |
+|--------|---------|
+| `nixosConfigurations.rpi5` | Base deploy (Telegram disabled) |
+| `nixosConfigurations.rpi5-telegram` | Telegram channel enabled |
+| `nixosConfigurations.rpi5-telegram-debug` | Telegram + debug tools (speaker-test, etc.) |
+| `nixosConfigurations.rpi5-installer` | Flashable SD card image |
 
-Both share the same system configuration. We use `nixosSystem` (base) instead of `nixosSystemFull` to avoid RPi multimedia overlay rebuilds — see [docs/workarounds.md](docs/workarounds.md) for rationale.
+All configs share `commonModules`. We use `nixosSystem` (base) instead of `nixosSystemFull` to avoid RPi multimedia overlay rebuilds — see [docs/workarounds.md](docs/workarounds.md) for rationale.
 
-The [OpenClaw gateway](https://github.com/MartinLoeper/nix-openclaw) runs as a systemd service (`openclaw-gateway.service`) on port 18789, serving AI-generated dashboards. It is included in both configurations via `commonModules`. See [docs/openclaw.md](docs/openclaw.md) for details.
+The [OpenClaw gateway](https://github.com/MartinLoeper/nix-openclaw) runs as a systemd service (`openclaw-gateway.service`) on port 18789, serving AI-generated dashboards. It is included in all configurations via `commonModules`. See [docs/openclaw.md](docs/openclaw.md) for details.
 
 ### Kiosk Specialisation
 
