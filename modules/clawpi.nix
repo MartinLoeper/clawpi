@@ -62,6 +62,12 @@
         description = "Streaming mode for responses. null uses the gateway default.";
       };
 
+      blockStreaming = lib.mkOption {
+        type = lib.types.nullOr lib.types.bool;
+        default = null;
+        description = "Enable block streaming. null uses the gateway default.";
+      };
+
       replyToMode = lib.mkOption {
         type = lib.types.nullOr (lib.types.enum [ "off" "first" "all" ]);
         default = null;
@@ -72,6 +78,36 @@
         type = lib.types.nullOr (lib.types.enum [ "off" "ack" "minimal" "extensive" ]);
         default = null;
         description = "Emoji reaction level on incoming messages. null uses the gateway default.";
+      };
+
+      reactionNotifications = lib.mkOption {
+        type = lib.types.nullOr (lib.types.enum [ "off" "own" "all" ]);
+        default = null;
+        description = "Which reaction notifications to show. null uses the gateway default.";
+      };
+
+      ackReaction = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        description = "Emoji reaction sent when the bot acknowledges an incoming message.";
+      };
+
+      actions = {
+        reactions = lib.mkOption {
+          type = lib.types.nullOr lib.types.bool;
+          default = null;
+          description = "Allow the bot to react to messages.";
+        };
+        sendMessage = lib.mkOption {
+          type = lib.types.nullOr lib.types.bool;
+          default = null;
+          description = "Allow the bot to send messages.";
+        };
+        sticker = lib.mkOption {
+          type = lib.types.nullOr lib.types.bool;
+          default = null;
+          description = "Allow the bot to send stickers.";
+        };
       };
     };
   };

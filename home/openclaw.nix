@@ -7,9 +7,17 @@ let
     tokenFile = tgCfg.tokenFile;
     allowFrom = lib.mkIf (tgCfg.allowFrom != [ ]) tgCfg.allowFrom;
     groups."*".requireMention = tgCfg.requireMentionInGroups;
-    streaming = lib.mkIf (tgCfg.streaming != null) tgCfg.streaming;
     replyToMode = lib.mkIf (tgCfg.replyToMode != null) tgCfg.replyToMode;
     reactionLevel = lib.mkIf (tgCfg.reactionLevel != null) tgCfg.reactionLevel;
+    reactionNotifications = lib.mkIf (tgCfg.reactionNotifications != null) tgCfg.reactionNotifications;
+    ackReaction = lib.mkIf (tgCfg.ackReaction != null) tgCfg.ackReaction;
+    actions = lib.mkIf (tgCfg.actions.reactions != null || tgCfg.actions.sendMessage != null || tgCfg.actions.sticker != null) {
+      reactions = lib.mkIf (tgCfg.actions.reactions != null) tgCfg.actions.reactions;
+      sendMessage = lib.mkIf (tgCfg.actions.sendMessage != null) tgCfg.actions.sendMessage;
+      sticker = lib.mkIf (tgCfg.actions.sticker != null) tgCfg.actions.sticker;
+    };
+    streaming = lib.mkIf (tgCfg.streaming != null) tgCfg.streaming;
+    blockStreaming = lib.mkIf (tgCfg.blockStreaming != null) tgCfg.blockStreaming;
   };
 in
 {

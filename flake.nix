@@ -66,7 +66,28 @@
       nixosConfigurations.rpi5-telegram = nixos-raspberrypi.lib.nixosSystem {
         specialArgs = commonArgs.specialArgs;
         modules = commonArgs.modules ++ [
-          { services.clawpi.telegram.enable = true; }
+          {
+            services.clawpi.telegram = {
+              enable = true;
+
+              # Workaround for https://github.com/openclaw/openclaw/issues/34790
+              # Both properties prevent partial message edits in Telegram.
+              # Revert streaming to "partial" and blockStreaming to null once fixed.
+              streaming = "block";
+              blockStreaming = true;
+
+              # Personal preference: full reactions and reply-to-all
+              replyToMode = "all";
+              ackReaction = "👀";
+              reactionLevel = "extensive";
+              reactionNotifications = "all";
+              actions = {
+                reactions = true;
+                sendMessage = true;
+                sticker = true;
+              };
+            };
+          }
         ];
       };
 
