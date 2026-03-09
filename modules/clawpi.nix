@@ -4,6 +4,12 @@ let
 in
 {
   options.services.clawpi = {
+    skills.enable = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Install the ClawPi skill bundle (video-watcher and more).";
+    };
+
     debug = lib.mkEnableOption "extra debugging tools and verbose logging";
 
     gateway = {
@@ -201,6 +207,10 @@ in
     (lib.mkIf cfg.audio.enable {
       environment.systemPackages = [ pkgs.whisper-cpp pkgs.file pkgs.ffmpeg-headless ]
         ++ lib.optionals cfg.audio.groq.enable [ pkgs.curl ];
+    })
+    (lib.mkIf cfg.skills.enable {
+      # video-watcher skill needs yt-dlp and python3
+      environment.systemPackages = [ pkgs.yt-dlp pkgs.python3 ];
     })
   ];
 }

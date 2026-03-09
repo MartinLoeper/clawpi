@@ -1,5 +1,6 @@
 { pkgs, osConfig, lib, ... }:
 let
+  skillsCfg = osConfig.services.clawpi.skills;
   audioCfg = osConfig.services.clawpi.audio;
   groqCfg = osConfig.services.clawpi.audio.groq;
   debugCfg = osConfig.services.clawpi.debug;
@@ -129,6 +130,14 @@ in
   programs.openclaw = {
     enable = true;
     package = pkgs.openclaw-gateway;
+    skills = lib.optionals skillsCfg.enable [
+      {
+        name = "video-watcher";
+        description = "Fetch and read transcripts from YouTube and Bilibili videos.";
+        mode = "copy";
+        source = "${pkgs.clawpi-skills}/share/clawpi-skills/video-watcher";
+      }
+    ];
     config = {
       gateway = {
         mode = "local";
