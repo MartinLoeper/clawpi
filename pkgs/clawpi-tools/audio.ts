@@ -179,17 +179,21 @@ export default function (api: any) {
   api.registerTool({
     name: "audio_record",
     description:
-      "Record audio from the default input source (microphone) for a specified " +
-      "number of seconds. Returns the recording as a base64-encoded WAV file. " +
-      "Useful for testing microphone input or capturing ambient audio.",
+      "Record audio from the default input source (microphone). " +
+      "Returns the recording as a WAV file. " +
+      "Before recording, ask the user how many seconds to record " +
+      "unless they already specified a duration. Defaults to 5 seconds.",
     parameters: Type.Object({
-      seconds: Type.Number({
-        description: "Recording duration in seconds",
-        minimum: 1,
-        maximum: 30,
-      }),
+      seconds: Type.Optional(
+        Type.Number({
+          description: "Recording duration in seconds (default: 5)",
+          minimum: 1,
+          maximum: 30,
+        }),
+      ),
     }),
-    async execute(_id: string, params: { seconds: number }) {
+    async execute(_id: string, params: { seconds?: number }) {
+      const duration = params.seconds ?? 5;
       const tmpFile = `/tmp/clawpi-record-${randomBytes(4).toString("hex")}.wav`;
       try {
         // pw-record doesn't have a duration flag — we spawn it and kill after timeout.
@@ -214,12 +218,12 @@ export default function (api: any) {
           setTimeout(() => {
             killed = true;
             child.kill("SIGTERM");
-          }, params.seconds * 1000);
+          }, duration * 1000);
         });
         const data = await readFile(tmpFile);
         return {
           content: [
-            { type: "text" as const, text: `Recorded ${params.seconds}s of audio (WAV, 16kHz mono, ${data.length} bytes).` },
+            { type: "text" as const, text: `Recorded ${duration}s of audio (WAV, 16kHz mono, ${data.length} bytes).` },
           ],
         };
       } finally {
