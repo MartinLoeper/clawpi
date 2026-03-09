@@ -21,6 +21,10 @@ let
   };
 in
 {
+  # The gateway overwrites openclaw.json at runtime, which conflicts with
+  # Home Manager's file management. Force overwrite to prevent activation failures.
+  home.file.".openclaw/openclaw.json".force = true;
+
   programs.openclaw = {
     enable = true;
     package = pkgs.openclaw-gateway;
