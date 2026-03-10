@@ -75,6 +75,9 @@
             services.clawpi.audio.groq.enable = true;
             services.clawpi.elevenlabs.enable = true;
             services.clawpi.voice.enable = true;
+            services.clawpi.openrouter.models = [
+              { id = "moonshotai/kimi-k2.5"; name = "Kimi K2.5"; }
+            ];
             services.clawpi.telegram = {
               enable = true;
 
@@ -111,6 +114,9 @@
             services.clawpi.audio.groq.enable = true;
             services.clawpi.elevenlabs.enable = true;
             services.clawpi.voice.enable = true;
+            services.clawpi.openrouter.models = [
+              { id = "moonshotai/kimi-k2.5"; name = "Kimi K2.5"; }
+            ];
             services.clawpi.telegram = {
               enable = true;
 

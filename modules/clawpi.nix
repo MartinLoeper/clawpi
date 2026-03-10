@@ -62,6 +62,41 @@ in
       };
     };
 
+    openrouter.models = lib.mkOption {
+      type = lib.types.listOf (lib.types.submodule {
+        options = {
+          id = lib.mkOption {
+            type = lib.types.str;
+            description = "OpenRouter model ID (e.g. 'moonshotai/kimi-k2.5').";
+          };
+          name = lib.mkOption {
+            type = lib.types.str;
+            description = "Human-readable model name.";
+          };
+          reasoning = lib.mkOption {
+            type = lib.types.bool;
+            default = false;
+            description = "Whether the model supports reasoning/thinking.";
+          };
+          contextWindow = lib.mkOption {
+            type = lib.types.int;
+            default = 131072;
+            description = "Context window size in tokens.";
+          };
+          maxTokens = lib.mkOption {
+            type = lib.types.int;
+            default = 8192;
+            description = "Maximum output tokens.";
+          };
+        };
+      });
+      default = [];
+      description = ''
+        Additional OpenRouter models to allow in the agent's models.json.
+        The 'auto' model is always included by default.
+      '';
+    };
+
     canvas = {
       tmpfs = lib.mkOption {
         type = lib.types.bool;

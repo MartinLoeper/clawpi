@@ -10,6 +10,7 @@ let
   elevenlabsCfg = osConfig.services.clawpi.elevenlabs;
   powerCfg = osConfig.services.clawpi.powerControl;
   tgCfg = osConfig.services.clawpi.telegram;
+  orModelsCfg = osConfig.services.clawpi.openrouter.models;
 
   # Append ClawPi-specific instructions to the agent's AGENTS.md at service start.
   # Uses a marker comment so the block is only injected once and updated in-place on redeploy.
@@ -126,6 +127,34 @@ let
 
   whisperMediaConfigFile = pkgs.writeText "openclaw-media-config.json" whisperMediaConfig;
 
+  # Patch models.json to add extra OpenRouter models.
+  # The gateway regenerates models.json on startup, so we patch it via ExecStartPre.
+  orModelsJson = builtins.toJSON (map (m: {
+    inherit (m) id name reasoning contextWindow maxTokens;
+    input = [ "text" ];
+    cost = { input = 0; output = 0; cacheRead = 0; cacheWrite = 0; };
+  }) orModelsCfg);
+
+  # Patch models.json after gateway generates it on startup.
+  # Uses inotifywait to watch for the file to be written, then patches it.
+  patchModelsScript = pkgs.writeShellScript "patch-openclaw-models" ''
+    modelsFile="$HOME/.openclaw/agents/main/agent/models.json"
+    extraModels='${orModelsJson}'
+    # Wait up to 30s for models.json to appear (gateway generates it on startup)
+    for i in $(seq 1 60); do
+      if [ -f "$modelsFile" ]; then
+        ${pkgs.jq}/bin/jq --argjson extra "$extraModels" \
+          '.providers.openrouter.models += $extra | .providers.openrouter.models |= unique_by(.id)' \
+          "$modelsFile" > "$modelsFile.tmp" \
+          && ${pkgs.coreutils}/bin/mv "$modelsFile.tmp" "$modelsFile"
+        echo "patched models.json with extra OpenRouter models"
+        exit 0
+      fi
+      sleep 0.5
+    done
+    echo "models.json not found after 30s, skipping patch" >&2
+  '';
+
   patchConfigScript = pkgs.writeShellScript "patch-openclaw-audio" ''
     configFile="$HOME/.openclaw/openclaw.json"
     if [ -f "$configFile" ]; then
@@ -236,6 +265,21 @@ in
         ++ lib.optional powerCfg.enable "CLAWPI_POWER_CONTROL=1";
       ExecStartPre = [ (toString patchAgentsScript) ]
         ++ lib.optional audioCfg.enable (toString patchConfigScript);
+    };
+  };
+
+  # Patch models.json after the gateway generates it on startup.
+  systemd.user.services.openclaw-models-patch = lib.mkIf (orModelsCfg != []) {
+    Unit = {
+      Description = "Patch OpenClaw models.json with extra OpenRouter models";
+      After = [ "openclaw-gateway.service" ];
+      Requires = [ "openclaw-gateway.service" ];
+    };
+    Install.WantedBy = [ "default.target" ];
+    Service = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = toString patchModelsScript;
     };
   };
 
