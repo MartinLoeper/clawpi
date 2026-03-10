@@ -128,11 +128,16 @@ class VoicePipeline:
         log.info("recording speech...")
         silence_timeout = self.cfg["silence_timeout"]
         max_bytes = int(self.cfg["max_record_secs"] * SAMPLE_RATE * 2)  # 2 bytes per s16 sample
-        silence_threshold = 300  # RMS threshold for silence detection
         chunk_size = CHUNK_SAMPLES * 2  # bytes
+
+        # Calibrate silence threshold from the first few chunks of ambient noise
+        # Use 2x the ambient RMS as threshold to distinguish speech from background
+        calibration_chunks = 3
+        ambient_samples = []
 
         recorded = bytearray()
         last_voice_time = time.monotonic()
+        silence_threshold = 500  # fallback
 
         while self.running:
             data = pw_proc.stdout.read(chunk_size)
@@ -141,6 +146,18 @@ class VoicePipeline:
 
             recorded.extend(data)
             energy = rms_energy(data)
+
+            # Calibrate from first N chunks
+            if len(ambient_samples) < calibration_chunks:
+                ambient_samples.append(energy)
+                if len(ambient_samples) == calibration_chunks:
+                    avg_ambient = sum(ambient_samples) / len(ambient_samples)
+                    silence_threshold = max(int(avg_ambient * 2.5), 200)
+                    log.debug("silence threshold calibrated: %d (ambient avg: %d)", silence_threshold, int(avg_ambient))
+                last_voice_time = time.monotonic()
+                continue
+
+            log.debug("energy=%d threshold=%d", energy, silence_threshold)
 
             if energy > silence_threshold:
                 last_voice_time = time.monotonic()
@@ -276,14 +293,21 @@ class VoicePipeline:
                     except Exception as e:
                         log.error("transcription failed: %s", e)
                     finally:
-                        os.unlink(wav_path)
+                        try:
+                            os.unlink(wav_path)
+                        except FileNotFoundError:
+                            pass
                         self._notify_state("idle")
 
         except KeyboardInterrupt:
             log.info("interrupted")
         finally:
             pw_proc.terminate()
-            pw_proc.wait(timeout=5)
+            try:
+                pw_proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                pw_proc.kill()
+                pw_proc.wait()
             log.info("voice pipeline stopped")
 
         return 0

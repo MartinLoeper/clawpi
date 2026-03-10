@@ -17,7 +17,7 @@ in
 
     threshold = lib.mkOption {
       type = lib.types.float;
-      default = 0.5;
+      default = 0.8;
       description = "Wake word detection threshold (0.0–1.0). Lower = more sensitive.";
     };
 
