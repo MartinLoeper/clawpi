@@ -25,17 +25,18 @@ Call `canvas_folder` to get the workspace path. Write files there and call `canv
 
 The canvas directory must be git-tracked. Commit every change the user requests:
 
-1. If the canvas directory is not yet a git repo, run `git init` and make an initial commit.
+1. If the canvas directory is not yet a git repo, run `git init`, configure the git user (`git config user.name "ClawPi"` and `git config user.email "clawpi@localhost"`), and make an initial commit.
 2. After every modification, stage and commit with a short descriptive message (e.g. "Add temperature chart", "Fix header alignment").
 3. Before archiving, ensure all changes are committed.
 4. Never skip commits — the user relies on git history to review, undo, and compare changes.
+5. After restoring an archive or starting a new project, initialize a fresh git repo (`git init` + initial commit) so history tracking begins immediately.
 
 ### Archiving
 
 - Never move files directly into the archive directory. Always use `canvas_archive`.
-- `canvas_archive` moves **all** canvas contents into a new named subdirectory in the archive. To archive a subset, temporarily move files you want to keep to `/tmp/canvas-stash/`, archive, then move them back.
+- `canvas_archive` moves **all** canvas contents (including the `.git` directory) into a new named subdirectory in the archive. This preserves the full git history alongside the project files. To archive a subset, temporarily move files you want to keep to `/tmp/canvas-stash/`, archive, then move them back.
 - When starting a new task, call `canvas_archive` first. If unsure whether the user wants to modify the existing project or start fresh, **ask** — do not assume.
-- Use `canvas_list_archive` and `canvas_restore` to browse and restore archived projects.
+- Use `canvas_list_archive` and `canvas_restore` to browse and restore archived projects. `canvas_restore` restores the `.git` directory too, so the project's full commit history is available again after restore.
 
 ### Static files only
 
