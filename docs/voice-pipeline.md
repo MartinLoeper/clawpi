@@ -210,6 +210,8 @@ bash train.sh
 - `torchaudio` ≥2.9 forces `torchcodec` backend which doesn't build with ROCm — `torchaudio.load` and `torchaudio.info` are monkey-patched to use `soundfile` directly
 - AudioSet on HuggingFace may return 404 — ESC-50 is used as background audio instead
 - `torchcodec` fails to build with ROCm torch — `datasets<4` with soundfile backend is used instead
+- `onnx_tf` (TFLite export) fails at the end of training — harmless, the `.onnx` model is saved before this step. `train.sh` tolerates this error.
+- `onnxscript` is required by `torch.onnx.export` in PyTorch ≥2.6 — installed via pip in `setup.sh`
 - Background tasks in Claude Code get killed on context compaction — use `tmux` or `nohup` for long training runs
 
 ### Training config: `training/hey_claw.yml`

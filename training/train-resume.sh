@@ -13,8 +13,9 @@ LOG="$SCRIPT_DIR/training.log"
 PIP_SITE="$SCRIPT_DIR/.pip/lib/python3.*/site-packages"
 # shellcheck disable=SC2086
 export PYTHONPATH="$SCRIPT_DIR/openwakeword:$SCRIPT_DIR/piper-sample-generator:$(echo $PIP_SITE):${PYTHONPATH:-}"
-# Force soundfile backend (torchcodec not available with ROCm)
-export TORCHAUDIO_BACKEND=soundfile
+
+# Ensure onnxscript is available (required by torch.onnx.export in PyTorch >=2.6)
+pip install --quiet onnxscript 2>/dev/null || true
 
 echo "=== Step 2/3: Augmenting clips ===" | tee -a "$LOG"
 python3 "$TRAIN" --training_config "$CONFIG" --augment_clips 2>&1 | tee -a "$LOG"

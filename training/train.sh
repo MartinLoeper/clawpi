@@ -31,7 +31,15 @@ python3 "$TRAIN" --training_config "$CONFIG" --augment_clips
 
 echo ""
 echo "=== Step 3/3: Training model ==="
-python3 "$TRAIN" --training_config "$CONFIG" --train_model
+# train_model exports .onnx successfully but then tries (and fails) to also
+# convert to TFLite via onnx_tf, which we don't need. Tolerate that error.
+python3 "$TRAIN" --training_config "$CONFIG" --train_model || true
+
+# Verify the ONNX model was actually created
+if [ ! -f "output/hey_claw/hey_claw.onnx" ]; then
+  echo "ERROR: Training failed — no .onnx model found."
+  exit 1
+fi
 
 echo ""
 echo "=== Training complete ==="

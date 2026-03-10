@@ -41,7 +41,8 @@ pip install --quiet \
   audiomentations==0.33.0 \
   acoustics==0.2.6 \
   pronouncing==0.2.0 \
-  deep-phonemizer==0.0.19
+  deep-phonemizer==0.0.19 \
+  onnxscript
 
 # Install openWakeWord in editable mode
 pip install --quiet --no-deps -e ./openwakeword

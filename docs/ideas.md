@@ -87,18 +87,23 @@ Support local LLM providers on the home network as a fallback when the internet 
 
 **NixOS integration:** Add `services.clawpi.localLLM` options for the inference server URL and model name. Could also package Ollama as a NixOS service on the Pi or a companion machine.
 
-## Publish "Hey Claw" Model to GitHub Releases
+## Publish "Hey Claw" Model via GitHub Releases — Partially Done
 
-Once the custom "hey claw" wake word model is trained and validated, publish it as a GitHub Release asset so the Nix package can `fetchurl` it directly instead of requiring users to train their own model.
+The first "hey claw" v0.1.0 model is trained and bundled inline (`pkgs/voice-pipeline/hey_claw.onnx`, 15KB). The voice module defaults to `assistantName = "claw"` which uses this model.
+
+**Next step: move the model to a separate GitHub repo with releases.** The inline `.onnx` file works but doesn't scale — retraining means committing a new binary blob every time. A separate repo (e.g. `MartinLoeper/hey-claw-model`) with GitHub Releases would:
+
+1. Keep the main repo clean of binary assets
+2. Allow versioned model releases (v0.1.0, v0.2.0, etc.) with release notes about training config changes
+3. Let the Nix package `fetchurl` the model from a release URL with a pinned hash
+4. Enable community contributions (different wake words, improved models) without cluttering the main repo
 
 **Steps:**
-1. Train the model (`nix develop .#training && cd training && bash train.sh`)
-2. Test locally with a microphone to verify acceptable detection rate and false-positive rate
-3. Create a GitHub Release (e.g. `v0.1.0-hey-claw`) and attach the `.onnx` file
-4. Update `pkgs/voice-pipeline/openwakeword.nix` to `fetchurl` the model from the release URL
-5. Update `modules/voice.nix` so the default `wakewordModel` points to the bundled "hey claw" model instead of "hey jarvis"
-
-This makes the voice pipeline work out of the box without any training setup — just `services.clawpi.voice.enable = true`.
+1. Create `MartinLoeper/hey-claw-model` repo with training config and instructions
+2. Upload `hey_claw.onnx` as a GitHub Release asset (e.g. `v0.1.0`)
+3. Update `pkgs/voice-pipeline/hey-claw-model.nix` to `fetchurl` from the release URL instead of using the inline file
+4. Remove `pkgs/voice-pipeline/hey_claw.onnx` from the main repo
+5. Retrain with more samples (50k+) and real voice recordings for better accuracy
 
 ## Project Name
 

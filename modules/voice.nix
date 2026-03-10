@@ -1,17 +1,23 @@
 { lib, pkgs, config, ... }:
 let
   cfg = config.services.clawpi.voice;
+
+  # Map assistant names to their wake word model files
+  assistantModels = {
+    claw = "${pkgs.hey-claw-model}/share/openwakeword/models/hey_claw.onnx";
+    jarvis = "${pkgs.openwakeword}/lib/python3*/site-packages/openwakeword/resources/models/hey_jarvis_v0.1.onnx";
+  };
 in
 {
   options.services.clawpi.voice = {
     enable = lib.mkEnableOption "voice pipeline (hotword detection + speech-to-text)";
 
     assistantName = lib.mkOption {
-      type = lib.types.enum [ "jarvis" ];
-      default = "jarvis";
+      type = lib.types.enum [ "claw" "jarvis" ];
+      default = "claw";
       description = ''
         Name of the voice assistant persona. Determines which bundled
-        wake word model is used (e.g. "jarvis" → "hey jarvis").
+        wake word model is used (e.g. "claw" → "hey claw", "jarvis" → "hey jarvis").
         Ignored when wakewordModel is set explicitly.
       '';
     };
@@ -45,6 +51,8 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    environment.systemPackages = [ pkgs.clawpi-voice-pipeline ];
+    environment.systemPackages = [
+      pkgs.clawpi-voice-pipeline
+    ] ++ lib.optional (cfg.wakewordModel == null && cfg.assistantName == "claw") pkgs.hey-claw-model;
   };
 }
