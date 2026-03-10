@@ -5,3 +5,5 @@ sdc
 *.bmap
 id_ed25519_rpi5
 id_ed25519_rpi5.pub
+.claude/scheduled_tasks.lock
+training/training.log
