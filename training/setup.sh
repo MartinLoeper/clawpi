@@ -46,6 +46,45 @@ pip install --quiet \
 # Install openWakeWord in editable mode
 pip install --quiet --no-deps -e ./openwakeword
 
+# 3b. Patch local clones for compatibility with newer PyTorch/torchaudio
+echo "Applying compatibility patches..."
+
+# PyTorch >=2.6 defaults weights_only=True which breaks torch.load(model.pt)
+if grep -q 'weights_only' piper-sample-generator/generate_samples.py 2>/dev/null; then
+  echo "  torch.load patch already applied"
+else
+  sed -i 's/torch\.load(\(.*\))/torch.load(\1, weights_only=False)/g' \
+    piper-sample-generator/generate_samples.py
+  echo "  Patched piper-sample-generator: torch.load(..., weights_only=False)"
+fi
+
+# torchaudio >=2.9 forces torchcodec which isn't available with ROCm.
+# Monkey-patch torchaudio.load and torchaudio.info to use soundfile directly.
+if grep -q '_patched_torchaudio_load' openwakeword/openwakeword/data.py 2>/dev/null; then
+  echo "  torchaudio/soundfile patch already applied"
+else
+  TORCHAUDIO_IMPORT_LINE=$(grep -n '^import torchaudio$' openwakeword/openwakeword/data.py | head -1 | cut -d: -f1)
+  if [ -n "$TORCHAUDIO_IMPORT_LINE" ]; then
+    sed -i "${TORCHAUDIO_IMPORT_LINE}a\\
+import soundfile as _sf\\
+def _patched_torchaudio_load(uri, *args, **kwargs):\\
+    data, sr = _sf.read(uri, dtype='float32')\\
+    tensor = torch.from_numpy(data).unsqueeze(0) if data.ndim == 1 else torch.from_numpy(data.T)\\
+    return tensor, sr\\
+torchaudio.load = _patched_torchaudio_load\\
+def _patched_torchaudio_info(uri, *args, **kwargs):\\
+    info = _sf.info(uri)\\
+    class AudioMetaData:\\
+        def __init__(self, sr, nf, nc):\\
+            self.sample_rate = sr\\
+            self.num_frames = nf\\
+            self.num_channels = nc\\
+    return AudioMetaData(info.samplerate, info.frames, info.channels)\\
+torchaudio.info = _patched_torchaudio_info" openwakeword/openwakeword/data.py
+    echo "  Patched openwakeword/data.py: torchaudio.load/info → soundfile"
+  fi
+fi
+
 # 4. Download openWakeWord embedding models
 MODELS_DIR="openwakeword/openwakeword/resources/models"
 mkdir -p "$MODELS_DIR"

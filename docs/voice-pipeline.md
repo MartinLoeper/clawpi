@@ -205,10 +205,12 @@ bash train.sh
 - Validation features (~185MB, ~11 hours, for false-positive rate estimation)
 - Piper TTS model (`en-us-libritts-high.pt`, ~255MB) for synthetic speech generation
 
-**Known issues / workarounds:**
-- `torch.load` in piper-sample-generator needs `weights_only=False` for PyTorch ≥2.6 (patched automatically by setup)
+**Known issues / workarounds** (all patched automatically by `setup.sh`):
+- `torch.load` in piper-sample-generator needs `weights_only=False` for PyTorch ≥2.6
+- `torchaudio` ≥2.9 forces `torchcodec` backend which doesn't build with ROCm — `torchaudio.load` and `torchaudio.info` are monkey-patched to use `soundfile` directly
 - AudioSet on HuggingFace may return 404 — ESC-50 is used as background audio instead
 - `torchcodec` fails to build with ROCm torch — `datasets<4` with soundfile backend is used instead
+- Background tasks in Claude Code get killed on context compaction — use `tmux` or `nohup` for long training runs
 
 ### Training config: `training/hey_claw.yml`
 
@@ -216,10 +218,10 @@ The config defines the "hey claw" target phrase with custom negative phrases to 
 
 | Parameter | Value | Description |
 |-----------|-------|-------------|
-| `n_samples` | 50,000 | Synthetic positive samples |
-| `n_samples_val` | 5,000 | Validation samples |
+| `n_samples` | 10,000 | Synthetic positive samples |
+| `n_samples_val` | 1,000 | Validation samples |
 | `augmentation_rounds` | 2 | Augmentation passes per sample |
-| `steps` | 50,000 | Training iterations |
+| `steps` | 10,000 | Training iterations |
 | `layer_size` | 32 | Model DNN layer size |
 | `target_false_positives_per_hour` | 0.2 | Target FP rate |
 
