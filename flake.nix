@@ -75,6 +75,7 @@
             services.clawpi.audio.groq.enable = true;
             services.clawpi.elevenlabs.enable = true;
             services.clawpi.voice.enable = true;
+            services.clawpi.voice.threshold = 0.25;
             services.clawpi.allowedModels = [
               # Anthropic
               { id = "anthropic/claude-sonnet-4-5"; name = "Sonnet 4.5"; }
@@ -120,6 +121,7 @@
             services.clawpi.audio.groq.enable = true;
             services.clawpi.elevenlabs.enable = true;
             services.clawpi.voice.enable = true;
+            services.clawpi.voice.threshold = 0.25;
             services.clawpi.allowedModels = [
               # Anthropic
               { id = "anthropic/claude-sonnet-4-5"; name = "Sonnet 4.5"; }
