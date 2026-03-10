@@ -77,6 +77,7 @@
             services.clawpi.voice.enable = true;
             services.clawpi.openrouter.models = [
               { id = "moonshotai/kimi-k2.5"; name = "Kimi K2.5"; }
+              { id = "minimax/minimax-m2.5"; name = "MiniMax M2.5"; }
             ];
             services.clawpi.telegram = {
               enable = true;
@@ -116,6 +117,7 @@
             services.clawpi.voice.enable = true;
             services.clawpi.openrouter.models = [
               { id = "moonshotai/kimi-k2.5"; name = "Kimi K2.5"; }
+              { id = "minimax/minimax-m2.5"; name = "MiniMax M2.5"; }
             ];
             services.clawpi.telegram = {
               enable = true;
