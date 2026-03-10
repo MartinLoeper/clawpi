@@ -17,19 +17,19 @@ else
 fi
 
 if [ ! -d "piper-sample-generator" ]; then
-  echo "Cloning piper-sample-generator..."
-  git clone https://github.com/rhasspy/piper-sample-generator
+  echo "Cloning piper-sample-generator (openWakeWord fork)..."
+  git clone https://github.com/dscripka/piper-sample-generator
 else
   echo "piper-sample-generator already cloned"
 fi
 
-# 2. Download Piper TTS model
-PIPER_MODEL="piper-sample-generator/models/en_US-libritts_r-medium.pt"
+# 2. Download Piper TTS model (the fork expects en-us-libritts-high.pt)
+PIPER_MODEL="piper-sample-generator/models/en-us-libritts-high.pt"
 if [ ! -f "$PIPER_MODEL" ]; then
   echo "Downloading Piper TTS model..."
   mkdir -p piper-sample-generator/models
   wget -O "$PIPER_MODEL" \
-    'https://github.com/rhasspy/piper-sample-generator/releases/download/v2.0.0/en_US-libritts_r-medium.pt'
+    'https://github.com/rhasspy/piper-sample-generator/releases/download/v1.0.0/en-us-libritts-high.pt'
 else
   echo "Piper TTS model already downloaded"
 fi

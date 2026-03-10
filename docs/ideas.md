@@ -87,6 +87,19 @@ Support local LLM providers on the home network as a fallback when the internet 
 
 **NixOS integration:** Add `services.clawpi.localLLM` options for the inference server URL and model name. Could also package Ollama as a NixOS service on the Pi or a companion machine.
 
+## Publish "Hey Claw" Model to GitHub Releases
+
+Once the custom "hey claw" wake word model is trained and validated, publish it as a GitHub Release asset so the Nix package can `fetchurl` it directly instead of requiring users to train their own model.
+
+**Steps:**
+1. Train the model (`nix develop .#training && cd training && bash train.sh`)
+2. Test locally with a microphone to verify acceptable detection rate and false-positive rate
+3. Create a GitHub Release (e.g. `v0.1.0-hey-claw`) and attach the `.onnx` file
+4. Update `pkgs/voice-pipeline/openwakeword.nix` to `fetchurl` the model from the release URL
+5. Update `modules/voice.nix` so the default `wakewordModel` points to the bundled "hey claw" model instead of "hey jarvis"
+
+This makes the voice pipeline work out of the box without any training setup — just `services.clawpi.voice.enable = true`.
+
 ## Project Name
 
 ~~Find a proper name for the project.~~ ✅ **Done** — the project is now called **ClawPi**.

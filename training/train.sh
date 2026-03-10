@@ -14,6 +14,14 @@ if [ ! -f "$TRAIN" ]; then
   exit 1
 fi
 
+# Ensure local clones and pip packages are on PYTHONPATH
+PIP_SITE="$SCRIPT_DIR/.pip/lib/python3.*/site-packages"
+# shellcheck disable=SC2086
+export PYTHONPATH="$SCRIPT_DIR/openwakeword:$SCRIPT_DIR/piper-sample-generator:$(echo $PIP_SITE):${PYTHONPATH:-}"
+
+# Create output directory
+mkdir -p output/hey_claw
+
 echo "=== Step 1/3: Generating synthetic clips ==="
 python3 "$TRAIN" --training_config "$CONFIG" --generate_clips
 

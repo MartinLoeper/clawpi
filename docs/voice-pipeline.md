@@ -160,18 +160,32 @@ cd training && bash setup.sh
 bash train.sh
 ```
 
-**What the devShell provides:**
-- PyTorch with ROCm GPU support
-- openWakeWord training dependencies (speechbrain, torchmetrics, torch-audiomentations, etc.)
-- Piper TTS for synthetic sample generation
-- TensorFlow for ONNX→TFLite conversion
-- Missing pip packages (audiomentations, acoustics, pronouncing, deep-phonemizer, onnx_tf) installed locally via pip
+**What the devShell provides (Nix):**
+- PyTorch with ROCm GPU support (full GPU acceleration)
+- torchaudio, torch-audiomentations, torchmetrics, torchinfo
+- espeak-phonemizer (for Piper TTS phoneme generation)
+- speechbrain, webrtcvad, soundfile
+- scipy, scikit-learn, numpy, onnx, onnxruntime, pyyaml, tqdm
 
-**Training data (downloaded by `setup.sh`):**
-- MIT room impulse responses (for realistic reverb augmentation)
-- AudioSet + FMA background audio (noise mixing)
-- ACAV100M pre-computed features (~2GB, 2000 hours of negative data)
-- Validation features (~11 hours, for false-positive rate estimation)
+**Additional pip packages (installed locally by `setup.sh`):**
+- `datasets<4` (HuggingFace datasets — pinned below v4 for soundfile audio backend)
+- audiomentations, acoustics, pronouncing, deep-phonemizer
+
+**Cloned repos (by `setup.sh`):**
+- [dscripka/openWakeWord](https://github.com/dscripka/openWakeWord) — training scripts
+- [dscripka/piper-sample-generator](https://github.com/dscripka/piper-sample-generator) — TTS fork with bundled `piper_train` VITS model code
+
+**Training data (downloaded by `setup.sh`, ~17GB total):**
+- MIT room impulse responses — 270 recordings for realistic reverb augmentation
+- ESC-50 environmental sounds — 2000 clips for background noise mixing
+- ACAV100M pre-computed features (~17GB, 2000 hours of negative data)
+- Validation features (~185MB, ~11 hours, for false-positive rate estimation)
+- Piper TTS model (`en-us-libritts-high.pt`, ~255MB) for synthetic speech generation
+
+**Known issues / workarounds:**
+- `torch.load` in piper-sample-generator needs `weights_only=False` for PyTorch ≥2.6 (patched automatically by setup)
+- AudioSet on HuggingFace may return 404 — ESC-50 is used as background audio instead
+- `torchcodec` fails to build with ROCm torch — `datasets<4` with soundfile backend is used instead
 
 ### Training config: `training/hey_claw.yml`
 
@@ -192,7 +206,7 @@ The automated pipeline runs three sequential steps:
 
 1. **Generate clips** — Piper TTS synthesizes "hey claw" in varied voices/accents, plus adversarial negatives. Uses GPU for faster generation.
 2. **Augment clips** — Applies room impulse responses, background noise, pitch shifts, and reverb to make synthetic clips realistic.
-3. **Train model** — Trains a small DNN on openWakeWord features with early stopping and checkpoint averaging. Outputs `.onnx` and `.tflite` files.
+3. **Train model** — Trains a small DNN on openWakeWord features with early stopping and checkpoint averaging. Outputs `.onnx` model file.
 
 ### Improving the model with real recordings
 
@@ -210,14 +224,14 @@ After training, copy the output model and configure the NixOS option:
 ```nix
 services.clawpi.voice = {
   enable = true;
-  wakewordModel = ./training/output/hey_claw/hey_claw.tflite;
+  wakewordModel = ./training/output/hey_claw/hey_claw.onnx;
   threshold = 0.5;  # Tune: lower = more sensitive, higher = fewer false positives
 };
 ```
 
 Test locally first with a microphone:
 ```sh
-python openwakeword/examples/detect_from_microphone.py --model_path output/hey_claw/hey_claw.tflite
+python openwakeword/examples/detect_from_microphone.py --model_path output/hey_claw/hey_claw.onnx
 ```
 
 ## Implementation Phases

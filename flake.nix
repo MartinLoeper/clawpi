@@ -188,6 +188,8 @@
 
             # TTS and audio processing
             ps.piper-phonemize
+            ps.espeak-phonemizer
+            ps.torchaudio
             ps.webrtcvad
 
             # Training data (soundfile for audio decoding)
