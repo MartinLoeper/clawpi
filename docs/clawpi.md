@@ -105,6 +105,45 @@ High-quality text-to-speech via the ElevenLabs cloud API. When enabled, the `tts
 | `services.clawpi.elevenlabs.voice` | string | `"eokb0hhuVX3JuAiUKucB"` | Default ElevenLabs voice ID |
 | `services.clawpi.elevenlabs.model` | string | `"eleven_v3"` | Default ElevenLabs model ID |
 
+## Voice Pipeline
+
+Always-on hotword detection and speech-to-text. The user says the wake word, the system records their command, transcribes it, and sends it to the agent.
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `services.clawpi.voice.enable` | bool | `false` | Enable the voice pipeline (hotword + STT) |
+| `services.clawpi.voice.assistantName` | enum | `"jarvis"` | Voice assistant persona — determines which bundled wake word model is used (e.g. `"jarvis"` → "hey jarvis"). Ignored when `wakewordModel` is set. |
+| `services.clawpi.voice.wakewordModel` | path or null | `null` | Path to a custom `.onnx` or `.tflite` wake word model. When null, the model is determined by `assistantName`. |
+| `services.clawpi.voice.threshold` | float | `0.8` | Wake word detection threshold (0.0–1.0). Lower = more sensitive, higher = fewer false positives. |
+| `services.clawpi.voice.silenceTimeout` | float | `1.5` | Seconds of silence before stopping speech recording |
+| `services.clawpi.voice.maxRecordSeconds` | float | `15.0` | Maximum speech recording duration in seconds |
+
+**Quick start:**
+```nix
+services.clawpi.voice = {
+  enable = true;
+  assistantName = "jarvis";  # uses bundled "hey jarvis" model
+};
+```
+
+**Custom wake word model:**
+```nix
+services.clawpi.voice = {
+  enable = true;
+  wakewordModel = ./training/output/hey_claw/hey_claw.onnx;
+};
+```
+
+See `docs/voice-pipeline.md` for architecture, training guide, and implementation details.
+
+## Power Control
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `services.clawpi.powerControl.enable` | bool | `true` | Allow the agent to control display power and shut down the system |
+
+When enabled, grants the kiosk user passwordless sudo for `poweroff` and exposes `display_power` and `system_poweroff` tools via the `CLAWPI_POWER_CONTROL` environment variable.
+
 ## Overlay Daemon
 
 The `clawpi` overlay daemon connects to the gateway and drives Eww status overlays (thinking, responding, tool use indicators). It runs as a Home Manager user service under the `kiosk` user, gated on `graphical-session.target`.

@@ -6,12 +6,22 @@ in
   options.services.clawpi.voice = {
     enable = lib.mkEnableOption "voice pipeline (hotword detection + speech-to-text)";
 
+    assistantName = lib.mkOption {
+      type = lib.types.enum [ "jarvis" ];
+      default = "jarvis";
+      description = ''
+        Name of the voice assistant persona. Determines which bundled
+        wake word model is used (e.g. "jarvis" → "hey jarvis").
+        Ignored when wakewordModel is set explicitly.
+      '';
+    };
+
     wakewordModel = lib.mkOption {
       type = lib.types.nullOr lib.types.path;
       default = null;
       description = ''
         Path to a custom wake word model file (.onnx or .tflite).
-        When null, the bundled "hey jarvis" ONNX model is used.
+        When null, the model is determined by assistantName.
       '';
     };
 

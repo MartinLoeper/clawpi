@@ -74,18 +74,40 @@ The agent receives the voice command as if the user typed it, and can respond wi
 
 ### Module: `modules/voice.nix`
 
+**Quick start with a bundled model:**
+```nix
+services.clawpi.voice = {
+  enable = true;
+  assistantName = "jarvis";  # uses bundled "hey jarvis" model
+};
+```
+
+**Custom wake word model:**
+```nix
+services.clawpi.voice = {
+  enable = true;
+  wakewordModel = ./training/output/hey_claw/hey_claw.onnx;
+  threshold = 0.5;  # lower = more sensitive
+};
+```
+
+**All options:**
 ```nix
 services.clawpi.voice = {
   enable = true;
 
-  # Path to a custom wake word .onnx model (null = bundled "hey jarvis")
-  wakewordModel = ./models/hey_claw.onnx;
+  # Voice assistant persona — determines which bundled wake word model is used.
+  # Ignored when wakewordModel is set explicitly.
+  assistantName = "jarvis";  # enum: [ "jarvis" ]
+
+  # Path to a custom wake word .onnx model (null = use assistantName)
+  wakewordModel = null;
 
   # Detection threshold 0.0–1.0 (lower = more sensitive)
-  threshold = 0.5;
+  threshold = 0.8;
 
   # Seconds of silence before stopping speech recording
-  silenceTimeout = 3.0;
+  silenceTimeout = 1.5;
 
   # Maximum recording duration in seconds
   maxRecordSeconds = 15.0;
@@ -220,7 +242,7 @@ For better real-world accuracy, supplement synthetic data with real voice record
 
 ### Deploying the model
 
-After training, copy the output model and configure the NixOS option:
+After training, copy the output model and configure the NixOS option. Use `wakewordModel` to point to your custom model (this overrides `assistantName`):
 
 ```nix
 services.clawpi.voice = {
