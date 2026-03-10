@@ -141,7 +141,8 @@ let
     modelsFile="$HOME/.openclaw/agents/main/agent/models.json"
     extraModels='${orModelsJson}'
     # Wait up to 30s for models.json to appear (gateway generates it on startup)
-    for i in $(seq 1 60); do
+    i=0
+    while [ "$i" -lt 60 ]; do
       if [ -f "$modelsFile" ]; then
         ${pkgs.jq}/bin/jq --argjson extra "$extraModels" \
           '.providers.openrouter.models += $extra | .providers.openrouter.models |= unique_by(.id)' \
@@ -150,7 +151,8 @@ let
         echo "patched models.json with extra OpenRouter models"
         exit 0
       fi
-      sleep 0.5
+      ${pkgs.coreutils}/bin/sleep 0.5
+      i=$((i + 1))
     done
     echo "models.json not found after 30s, skipping patch" >&2
   '';
