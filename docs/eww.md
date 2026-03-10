@@ -76,6 +76,9 @@ Red recording indicator shown while the `audio_transcribe` tool is actively reco
 | `/api/tts/stopped` | POST | Hide stop button (natural end) |
 | `/api/recording/start` | POST | Show recording indicator |
 | `/api/recording/stop` | POST | Hide recording indicator |
+| `/api/voice/listening` | POST | Show recording indicator (voice pipeline) |
+| `/api/voice/transcribing` | POST | Hide recording indicator (voice pipeline) |
+| `/api/voice/idle` | POST | Hide recording indicator (voice pipeline) |
 
 ## Adding a New Overlay
 

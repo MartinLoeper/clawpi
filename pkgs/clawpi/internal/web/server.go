@@ -96,6 +96,34 @@ func Serve(addr string, canvasDir string, canvasArchiveDir string, ctrl *eww.Con
 		w.Write([]byte(`{"ok":true}`))
 	})
 
+	// Voice pipeline state callbacks (called by voice-pipeline.py via _notify_state)
+	mux.HandleFunc("POST /api/voice/listening", func(w http.ResponseWriter, r *http.Request) {
+		log.Println("voice: listening (recording speech)")
+		if ewwController != nil {
+			ewwController.SetRecording(true)
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"ok":true}`))
+	})
+
+	mux.HandleFunc("POST /api/voice/transcribing", func(w http.ResponseWriter, r *http.Request) {
+		log.Println("voice: transcribing")
+		if ewwController != nil {
+			ewwController.SetRecording(false)
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"ok":true}`))
+	})
+
+	mux.HandleFunc("POST /api/voice/idle", func(w http.ResponseWriter, r *http.Request) {
+		log.Println("voice: idle")
+		if ewwController != nil {
+			ewwController.SetRecording(false)
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"ok":true}`))
+	})
+
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
 		return err
