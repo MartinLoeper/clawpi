@@ -3,12 +3,38 @@ let
   voiceCfg = osConfig.services.clawpi.voice;
   gatewayCfg = osConfig.services.clawpi.gateway;
   audioCfg = osConfig.services.clawpi.audio;
+  groqCfg = osConfig.services.clawpi.audio.groq;
   debugCfg = osConfig.services.clawpi.debug;
 
   whisperModel = pkgs.whisper-model.override { model = audioCfg.model; };
 
-  whisperCmd = pkgs.writeShellScript "voice-whisper" ''
-    input="$1"
+  log = msg: lib.optionalString debugCfg
+    ''echo "[voice-whisper] ${msg}" >&2'';
+
+  # Groq cloud transcription
+  groqTranscribe = ''
+    groq_key=""
+    if [ -f "${toString groqCfg.apiKeyFile}" ]; then
+      groq_key="$(${pkgs.coreutils}/bin/cat "${toString groqCfg.apiKeyFile}")"
+    fi
+    if [ -n "$groq_key" ]; then
+      groq_result="$(${pkgs.curl}/bin/curl -sf \
+        --max-time ${toString audioCfg.timeoutSeconds} \
+        https://api.groq.com/openai/v1/audio/transcriptions \
+        -H "Authorization: Bearer $groq_key" \
+        -F "file=@$input" \
+        -F "model=${groqCfg.model}" \
+        -F "response_format=text"${lib.optionalString (audioCfg.language != "auto") ''
+        -F "language=${audioCfg.language}"''} 2>/dev/null)" && \
+      [ -n "$groq_result" ] && {
+        echo "$groq_result"
+        rc=0
+      }
+    fi
+  '';
+
+  # Local whisper-cli fallback
+  localTranscribe = ''
     wav="''${input%.*}.wav"
     ${pkgs.ffmpeg-headless}/bin/ffmpeg -y -i "$input" -ar 16000 -ac 1 -c:a pcm_s16le "$wav" 2>/dev/null
     ${pkgs.whisper-cpp}/bin/whisper-cli \
@@ -18,6 +44,26 @@ let
       "$wav" 2>/dev/null
     rc=$?
     ${pkgs.coreutils}/bin/rm -f "$wav"
+  '';
+
+  whisperCmd = pkgs.writeShellScript "voice-whisper" ''
+    input="$1"
+    rc=1
+    ${log "input=$input"}
+    ${lib.optionalString groqCfg.enable ''
+    ${log "trying Groq (${groqCfg.model})..."}
+    ${groqTranscribe}
+    if [ "$rc" -eq 0 ]; then
+      ${log "Groq succeeded"}
+    else
+      ${log "Groq failed, falling back to local whisper"}
+    fi
+    ''}
+    if [ "$rc" -ne 0 ]; then
+      ${log "using local whisper-cli (model=${audioCfg.model})"}
+      ${localTranscribe}
+      ${log "local whisper-cli exited with rc=$rc"}
+    fi
     exit $rc
   '';
 in
