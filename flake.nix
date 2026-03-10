@@ -76,8 +76,8 @@
             services.clawpi.elevenlabs.enable = true;
             services.clawpi.voice.enable = true;
             services.clawpi.openrouter.models = [
-              { id = "moonshotai/kimi-k2.5"; name = "Kimi K2.5"; }
-              { id = "minimax/minimax-m2.5"; name = "MiniMax M2.5"; }
+              { id = "moonshotai/kimi-k2.5"; name = "Kimi K2.5"; reasoning = true; contextWindow = 262144; maxTokens = 65535; }
+              { id = "minimax/minimax-m2.5"; name = "MiniMax M2.5"; reasoning = true; contextWindow = 196608; maxTokens = 196608; }
             ];
             services.clawpi.telegram = {
               enable = true;
@@ -116,8 +116,8 @@
             services.clawpi.elevenlabs.enable = true;
             services.clawpi.voice.enable = true;
             services.clawpi.openrouter.models = [
-              { id = "moonshotai/kimi-k2.5"; name = "Kimi K2.5"; }
-              { id = "minimax/minimax-m2.5"; name = "MiniMax M2.5"; }
+              { id = "moonshotai/kimi-k2.5"; name = "Kimi K2.5"; reasoning = true; contextWindow = 262144; maxTokens = 65535; }
+              { id = "minimax/minimax-m2.5"; name = "MiniMax M2.5"; reasoning = true; contextWindow = 196608; maxTokens = 196608; }
             ];
             services.clawpi.telegram = {
               enable = true;
