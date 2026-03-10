@@ -204,7 +204,8 @@ export default function (api: any) {
       "Restore an archived project back into the active canvas workspace. " +
       "If the canvas currently has content, it is automatically archived " +
       "first (you must provide auto_archive_name for the current project). " +
-      "Call canvas_open after restoring to display it.",
+      "After restoring, reload the page and navigate to the canvas if the " +
+      "browser is not already showing it.",
     parameters: Type.Object({
       name: Type.String({
         description:
