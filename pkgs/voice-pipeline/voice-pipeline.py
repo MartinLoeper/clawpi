@@ -78,9 +78,15 @@ class VoicePipeline:
                 inference_framework="onnx",
             )
         else:
-            # Use bundled models (e.g. hey_jarvis)
-            log.info("loading bundled wake word models")
-            self._oww_model = Model(inference_framework="onnx")
+            # Use bundled hey_jarvis model from openwakeword's resources
+            import openwakeword
+            oww_dir = os.path.join(os.path.dirname(openwakeword.__file__), "resources", "models")
+            jarvis_path = os.path.join(oww_dir, "hey_jarvis_v0.1.onnx")
+            log.info("loading bundled wake word model: %s", jarvis_path)
+            self._oww_model = Model(
+                wakeword_models=[jarvis_path],
+                inference_framework="onnx",
+            )
 
         log.info("wake word models loaded: %s", list(self._oww_model.models.keys()))
 
