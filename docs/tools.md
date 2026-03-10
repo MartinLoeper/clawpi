@@ -30,6 +30,8 @@ ClawPi ships an OpenClaw plugin (`clawpi-tools`) that gives the agent hardware c
 | `canvas_archive` | Canvas | `name` | Archive current canvas project, then clear workspace |
 | `canvas_list_archive` | Canvas | — | List all archived canvas projects |
 | `canvas_restore` | Canvas | `name` | Archive current canvas (if any), restore a project from archive |
+| `display_power` | Display | `state` ("on"/"off") | Turn the display on or off via wlr-randr |
+| `system_poweroff` | System | — | Shut down the Raspberry Pi |
 
 ## Audio
 
@@ -355,11 +357,38 @@ Restore an archived project back into the active canvas workspace. If the canvas
 
 Call `canvas_open` after restoring to navigate the browser to the restored content.
 
+## Display & System
+
+Tools for controlling the display and system power. Both require `services.clawpi.powerControl.enable = true` (enabled by default). The tools check for the `CLAWPI_POWER_CONTROL` environment variable at runtime and refuse to execute if it is not set.
+
+### `display_power`
+
+Turn the connected display on or off via `wlr-randr`. Use this for energy saving, privacy (blanking the screen), or waking the display.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `state` | `"on"` \| `"off"` | yes | Turn the display on or off |
+
+**Returns:** Confirmation message with the output name.
+
+**How it works:** Lists Wayland outputs via `wlr-randr`, then toggles the first output with `--on` or `--off`. Requires the `WAYLAND_DISPLAY` environment to be set (handled automatically by the helper).
+
+### `system_poweroff`
+
+Shut down the Raspberry Pi completely. The device will need to be physically power-cycled to start again. The agent must always confirm with the user before calling this tool.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| *(none)* | | |
+
+**Returns:** Confirmation that shutdown has been initiated.
+
+**How it works:** Runs `sudo poweroff`. The kiosk user is granted passwordless sudo for `poweroff` when `services.clawpi.powerControl.enable = true`.
+
 ## Planned Tools
 
 See `docs/ideas.md` for tools under consideration:
 
-- **Display power** — turn the connected display on/off via `wlr-randr` or DDC/CI
 - **Display brightness** — adjust brightness via DDC/CI (`ddcutil`)
 - **Show choices** — Eww overlay for multi-option disambiguation, returns user selection
 - **Show message** — speech bubble Eww overlay with agent text

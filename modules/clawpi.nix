@@ -151,6 +151,18 @@ in
       };
     };
 
+    powerControl = {
+      enable = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = ''
+          Allow the agent to control display power (on/off) and shut down
+          the system. Grants the kiosk user passwordless sudo for poweroff
+          and exposes the display_power and system_poweroff tools.
+        '';
+      };
+    };
+
     telegram = {
       enable = lib.mkEnableOption "Telegram channel for the OpenClaw agent";
 
@@ -242,8 +254,9 @@ in
     {
       # alsa-utils provides speaker-test, used by the audio_test_tone plugin tool
       # wf-recorder provides Wayland screen recording, used by screen_record_start/stop
+      # wlr-randr provides Wayland output control, used by display_power tool
       # git is used by the agent for version-controlling canvas projects
-      environment.systemPackages = [ pkgs.alsa-utils pkgs.wf-recorder pkgs.git ];
+      environment.systemPackages = [ pkgs.alsa-utils pkgs.wf-recorder pkgs.wlr-randr pkgs.git ];
     }
     (lib.mkIf cfg.audio.enable {
       environment.systemPackages = [ pkgs.whisper-cpp pkgs.file pkgs.ffmpeg-headless ]
@@ -252,6 +265,17 @@ in
     (lib.mkIf cfg.skills.enable {
       # video-watcher skill needs yt-dlp and python3
       environment.systemPackages = [ pkgs.yt-dlp pkgs.python3 ];
+    })
+    (lib.mkIf cfg.powerControl.enable {
+      # Allow kiosk user to run poweroff without a password
+      security.sudo.extraRules = [
+        {
+          users = [ "kiosk" ];
+          commands = [
+            { command = "/run/current-system/sw/bin/poweroff"; options = [ "NOPASSWD" ]; }
+          ];
+        }
+      ];
     })
   ];
 }

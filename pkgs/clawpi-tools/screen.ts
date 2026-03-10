@@ -2,7 +2,7 @@ import { Type } from "@sinclair/typebox";
 import { stat } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
 import { execFile } from "node:child_process";
-import { text, SYSTEM_PATH } from "./helpers";
+import { run, text, runWayland, SYSTEM_PATH } from "./helpers";
 import type { ChildProcess } from "node:child_process";
 
 const DEBUG = process.env.OPENCLAW_LOG_LEVEL === "debug" || process.env.CLAWPI_DEBUG === "1";
@@ -14,7 +14,72 @@ let activeRecording: {
   startedAt: number;
 } | null = null;
 
+const POWER_CONTROL = process.env.CLAWPI_POWER_CONTROL === "1";
+
 export default function (api: any) {
+  // ── Display power ──────────────────────────────────────────────
+  api.registerTool({
+    name: "display_power",
+    description:
+      "Turn the connected display on or off via Wayland output control. " +
+      "Use this to save energy, blank the screen for privacy, or wake up the display. " +
+      "Requires services.clawpi.powerControl.enable = true.",
+    parameters: Type.Object({
+      state: Type.Union(
+        [Type.Literal("on"), Type.Literal("off")],
+        { description: 'Set to "on" to turn the display on, "off" to turn it off.' },
+      ),
+    }),
+    async execute(_id: string, params: { state: "on" | "off" }) {
+      if (!POWER_CONTROL) {
+        return text("Error: power control is disabled. Set services.clawpi.powerControl.enable = true.");
+      }
+
+      try {
+        // List outputs to find the active one
+        const { stdout: listing } = await runWayland("wlr-randr", []);
+        const outputMatch = listing.match(/^(\S+)/);
+        if (!outputMatch) {
+          return text("Error: no Wayland output found.");
+        }
+        const output = outputMatch[1];
+
+        if (params.state === "off") {
+          await runWayland("wlr-randr", ["--output", output, "--off"]);
+          return text(`Display "${output}" turned off.`);
+        } else {
+          await runWayland("wlr-randr", ["--output", output, "--on"]);
+          return text(`Display "${output}" turned on.`);
+        }
+      } catch (e: any) {
+        return text(`Error: ${e.message || e}`);
+      }
+    },
+  });
+
+  // ── System poweroff ────────────────────────────────────────────
+  api.registerTool({
+    name: "system_poweroff",
+    description:
+      "Shut down the Raspberry Pi. This powers off the system completely — " +
+      "the device will need to be physically power-cycled to start again. " +
+      "Always confirm with the user before calling this tool. " +
+      "Requires services.clawpi.powerControl.enable = true.",
+    parameters: Type.Object({}),
+    async execute() {
+      if (!POWER_CONTROL) {
+        return text("Error: power control is disabled. Set services.clawpi.powerControl.enable = true.");
+      }
+
+      try {
+        await run("sudo", ["poweroff"]);
+        return text("System is shutting down...");
+      } catch (e: any) {
+        return text(`Error: ${e.message || e}`);
+      }
+    },
+  });
+
   // ── Screen recording: start ─────────────────────────────────────
   api.registerTool({
     name: "screen_record_start",

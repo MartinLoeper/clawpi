@@ -8,6 +8,7 @@ let
   canvasDir = if canvasCfg.tmpfs then "/tmp/clawpi-canvas" else "/var/lib/kiosk/.openclaw/canvas";
   canvasArchiveDir = "/var/lib/kiosk/.openclaw/canvas-archive";
   elevenlabsCfg = osConfig.services.clawpi.elevenlabs;
+  powerCfg = osConfig.services.clawpi.powerControl;
   tgCfg = osConfig.services.clawpi.telegram;
 
   # Append ClawPi-specific instructions to the agent's AGENTS.md at service start.
@@ -231,7 +232,8 @@ in
           "CLAWPI_ELEVENLABS_API_KEY_FILE=${toString elevenlabsCfg.apiKeyFile}"
           "CLAWPI_ELEVENLABS_VOICE=${elevenlabsCfg.voice}"
           "CLAWPI_ELEVENLABS_MODEL=${elevenlabsCfg.model}"
-        ];
+        ]
+        ++ lib.optional powerCfg.enable "CLAWPI_POWER_CONTROL=1";
       ExecStartPre = [ (toString patchAgentsScript) ]
         ++ lib.optional audioCfg.enable (toString patchConfigScript);
     };

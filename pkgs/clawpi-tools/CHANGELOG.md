@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.11.0
+
+- Add `display_power` tool — turn the display on/off via wlr-randr
+- Add `system_poweroff` tool — shut down the Pi (requires user confirmation)
+- Both tools gated behind `services.clawpi.powerControl.enable` (default: true)
+- Tools refuse to execute if `CLAWPI_POWER_CONTROL` env var is not set
+
 ## 0.10.2
 
 - Show red "Recording..." overlay (top right) while `audio_transcribe` is recording
