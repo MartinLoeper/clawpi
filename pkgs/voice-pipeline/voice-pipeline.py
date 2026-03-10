@@ -27,6 +27,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import uuid
 
 import numpy as np
 import openwakeword
@@ -187,7 +188,15 @@ class VoicePipeline:
         return tmp.name
 
     async def _send_to_gateway(self, transcript):
-        """Send transcript to OpenClaw gateway via WebSocket."""
+        """Send transcript to OpenClaw gateway via WebSocket.
+
+        Protocol:
+        1. Connect → receive connect.challenge event
+        2. Send connect request with auth token
+        3. Receive hello-ok response
+        4. Send chat.send request with the transcript
+        5. Wait for agent to finish (final/error state)
+        """
         url = self.cfg["gateway_url"]
         token = self.cfg["gateway_token"]
 
@@ -196,22 +205,78 @@ class VoicePipeline:
             return False
 
         try:
-            headers = {"Authorization": f"Bearer {token}"}
-            async with websockets.connect(url, additional_headers=headers) as ws:
-                message = {
-                    "type": "user_message",
-                    "content": transcript,
-                    "source": "voice",
-                }
-                await ws.send(json.dumps(message))
+            async with websockets.connect(url) as ws:
+                # Step 1: Receive connect.challenge
+                raw = await asyncio.wait_for(ws.recv(), timeout=5.0)
+                challenge = json.loads(raw)
+                if challenge.get("event") != "connect.challenge":
+                    log.error("expected connect.challenge, got: %s", challenge.get("event"))
+                    return False
+                log.debug("received connect.challenge")
+
+                # Step 2: Send connect request with auth
+                connect_id = str(uuid.uuid4())
+                await ws.send(json.dumps({
+                    "type": "req",
+                    "id": connect_id,
+                    "method": "connect",
+                    "params": {
+                        "minProtocol": 3,
+                        "maxProtocol": 3,
+                        "client": {
+                            "id": "gateway-client",
+                            "version": "1.0.0",
+                            "platform": "linux",
+                            "mode": "backend",
+                        },
+                        "auth": {"token": token},
+                        "role": "operator",
+                        "scopes": ["operator.admin"],
+                    },
+                }))
+
+                # Step 3: Receive hello-ok
+                raw = await asyncio.wait_for(ws.recv(), timeout=5.0)
+                hello = json.loads(raw)
+                if not hello.get("ok"):
+                    log.error("connect rejected: %s", raw[:200])
+                    return False
+                log.debug("connected to gateway")
+
+                # Step 4: Send chat.send
+                chat_id = str(uuid.uuid4())
+                idempotency_key = str(uuid.uuid4())
+                await ws.send(json.dumps({
+                    "type": "req",
+                    "id": chat_id,
+                    "method": "chat.send",
+                    "params": {
+                        "sessionKey": "main",
+                        "message": transcript,
+                        "deliver": False,
+                        "idempotencyKey": idempotency_key,
+                    },
+                }))
                 log.info("sent transcript to gateway: %s", transcript[:100])
 
-                # Wait for ack
+                # Step 5: Wait for agent to finish
                 try:
-                    response = await asyncio.wait_for(ws.recv(), timeout=5.0)
-                    log.debug("gateway response: %s", response[:200] if response else "empty")
+                    while True:
+                        raw = await asyncio.wait_for(ws.recv(), timeout=120.0)
+                        msg = json.loads(raw)
+                        if msg.get("type") == "event" and msg.get("event") == "chat":
+                            state = msg.get("payload", {}).get("state")
+                            if state == "final":
+                                log.info("agent finished")
+                                break
+                            elif state in ("error", "aborted"):
+                                log.error("agent %s: %s", state,
+                                          msg.get("payload", {}).get("errorMessage", ""))
+                                break
+                        elif msg.get("type") == "res" and msg.get("id") == chat_id:
+                            log.debug("chat.send acknowledged")
                 except asyncio.TimeoutError:
-                    log.warning("gateway did not ack within 5s")
+                    log.warning("agent did not finish within 120s")
 
                 return True
         except Exception as e:
