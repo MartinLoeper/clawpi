@@ -1,12 +1,14 @@
 // ClawPi status overlay styles
 
 .status-container {
-  background-color: rgba(0, 0, 0, 0.75);
+  background-color: rgba(0, 0, 0, 0.85);
   border-radius: 12px;
   padding: 8px 20px;
   color: white;
   font-size: 18px;
   font-family: sans-serif;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
 .status-thinking {
@@ -22,7 +24,7 @@
 }
 
 .status-error {
-  background-color: rgba(200, 0, 0, 0.8);
+  background-color: rgba(200, 0, 0, 0.9);
 }
 
 .status-icon {
@@ -41,12 +43,14 @@
 
 // Recording indicator
 .recording-container {
-  background-color: rgba(200, 0, 0, 0.8);
+  background-color: rgba(200, 0, 0, 0.85);
   border-radius: 12px;
   padding: 8px 20px;
   color: white;
   font-size: 18px;
   font-family: sans-serif;
+  border: 1px solid rgba(255, 100, 100, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
   animation: pulse 1.5s ease-in-out infinite;
 }
 
@@ -61,14 +65,15 @@
 
 // TTS stop button
 .tts-stop-btn {
-  background-color: rgba(200, 50, 50, 0.85);
-  border: none;
+  background-color: rgba(200, 50, 50, 0.9);
+  border: 1px solid rgba(255, 100, 100, 0.4);
   border-radius: 12px;
   padding: 8px 16px;
   color: white;
   font-family: sans-serif;
   font-size: 16px;
   cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 
   &:hover {
     background-color: rgba(220, 60, 60, 0.95);
