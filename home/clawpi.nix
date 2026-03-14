@@ -51,7 +51,7 @@ in
       EnvironmentFile = "/var/lib/kiosk/.openclaw/gateway-token.env";
       Environment = [
         "CLAWPI_GATEWAY_URL=ws://localhost:18789"
-        "CLAWPI_STATE_FILE=/run/user/1000/clawpi-state.json"
+        "CLAWPI_STATE_FILE=%t/clawpi-state.json"
         "CLAWPI_WEB_ADDR=:3100"
         "CLAWPI_CANVAS_DIR=${canvasDir}"
         "CLAWPI_CANVAS_ARCHIVE_DIR=${canvasArchiveDir}"

@@ -13,10 +13,11 @@ ShellRoot {
     property string toolName: ""
     property string message: ""
 
-    function parseState(text) {
-        if (!text || text.trim() === "") return;
+    function parseState(rawText) {
+        var str = typeof rawText === "function" ? rawText() : rawText;
+        if (!str || str.length === 0) return;
         try {
-            var obj = JSON.parse(text);
+            var obj = JSON.parse(str);
             root.currentState = obj.state || "idle";
             root.ttsPlaying = obj.ttsPlaying || false;
             root.recording = obj.recording || false;
@@ -56,7 +57,7 @@ ShellRoot {
 
     FileView {
         id: stateFile
-        path: "/run/user/1000/clawpi-state.json"
+        path: Quickshell.env("XDG_RUNTIME_DIR") + "/clawpi-state.json"
         watchChanges: true
         onTextChanged: root.parseState(text)
     }
