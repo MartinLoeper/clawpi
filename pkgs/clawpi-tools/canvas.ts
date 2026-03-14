@@ -205,8 +205,8 @@ export default function (api: any) {
       "Files are COPIED from the archive (the archive is preserved, not deleted). " +
       "If the canvas currently has content, it is automatically archived " +
       "first (you must provide auto_archive_name for the current project). " +
-      "After restoring, reload the page and navigate to the canvas if the " +
-      "browser is not already showing it.",
+      "After restoring, hard-refresh the browser (cache-busting reload) " +
+      "and navigate to the canvas to show the restored project to the user.",
     parameters: Type.Object({
       name: Type.String({
         description:
