@@ -77,6 +77,17 @@ ShellRoot {
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
+        // Only the stop button needs input; everything else is click-through
+        mask: root.ttsPlaying ? ttsStopBtnRegion : emptyRegion
+
+        Region {
+            id: ttsStopBtnRegion
+            item: ttsStopBtn
+        }
+        Region {
+            id: emptyRegion
+        }
+
         property real phase: 0.0
 
         Timer {
