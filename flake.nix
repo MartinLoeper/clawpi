@@ -200,7 +200,6 @@
                 enable = true;
                 groupPolicy = "allowlist";
                 allowedGroupsFile = "/var/lib/clawpi/telegram-allowed-groups";
-                allowFromFile = "/var/lib/clawpi/telegram-allow-from";
 
                 # Workaround for https://github.com/openclaw/openclaw/issues/34790
                 # Both properties prevent partial message edits in Telegram.
@@ -329,7 +328,6 @@
                 enable = true;
                 groupPolicy = "allowlist";
                 allowedGroupsFile = "/var/lib/clawpi/telegram-allowed-groups";
-                allowFromFile = "/var/lib/clawpi/telegram-allow-from";
 
                 # Workaround for https://github.com/openclaw/openclaw/issues/34790
                 streaming = "block";
