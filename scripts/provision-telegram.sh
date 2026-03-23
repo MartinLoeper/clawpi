@@ -7,7 +7,7 @@
 # 1. Prompts for the bot token (from @BotFather)
 # 2. Writes it to /var/lib/clawpi/telegram-bot-token on the Pi
 # 3. Optionally prompts for group IDs to allowlist
-# 4. Writes them to /var/lib/clawpi/telegram-group-allow-from on the Pi
+# 4. Writes them to /var/lib/clawpi/telegram-allowed-groups on the Pi
 # 5. Prints the next steps
 set -euo pipefail
 
@@ -74,7 +74,7 @@ echo ""
 echo "   (Get your user ID from @userinfobot on Telegram.)"
 echo "   Without allowFrom, anyone who finds your bot can message the agent."
 echo ""
-echo "2. Deploy: ./scripts/deploy.sh ${TARGET_HOST} --specialisation kiosk"
+echo "2. Deploy: FLAKE_ATTR=rpi5-telegram ./scripts/deploy.sh ${TARGET_HOST}"
 echo ""
 echo "3. Verify: ssh nixos@${TARGET_HOST} sudo tail -50 /tmp/openclaw/openclaw-gateway.log"
 echo ""
