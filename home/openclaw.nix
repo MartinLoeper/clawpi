@@ -235,11 +235,19 @@ let
     allowFile="${toString tgCfg.allowedGroupsFile}"
     if [ -f "$allowFile" ]; then
       # Wait for the gateway to finish its config normalization
-      sleep 2
+      ${pkgs.coreutils}/bin/sleep 2
+      configFile="$HOME/.openclaw/openclaw.json"
       while IFS= read -r gid || [ -n "$gid" ]; do
         [ -z "$gid" ] && continue
         ${pkgs.openclaw-gateway}/bin/openclaw config set "channels.telegram.groups.$gid.requireMention" ${if tgCfg.requireMentionInGroups then "true" else "false"}
       done < "$allowFile"
+      # Also populate groupAllowFrom so the allowlist policy accepts these groups
+      if [ -f "$configFile" ]; then
+        ids="$(${pkgs.coreutils}/bin/cat "$allowFile" | ${pkgs.gnused}/bin/sed '/^$/d' | ${pkgs.jq}/bin/jq -R '.' | ${pkgs.jq}/bin/jq -s '.')"
+        ${pkgs.jq}/bin/jq --argjson ids "$ids" '.channels.telegram.groupAllowFrom = ((.channels.telegram.groupAllowFrom // []) + $ids | unique)' \
+          "$configFile" > "$configFile.tmp" \
+          && ${pkgs.coreutils}/bin/mv "$configFile.tmp" "$configFile"
+      fi
     fi
   '';
 
