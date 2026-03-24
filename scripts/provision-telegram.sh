@@ -43,19 +43,20 @@ ${SSH} "sudo mkdir -p /var/lib/clawpi && echo -n '${BOT_TOKEN}' | sudo tee ${TOK
 echo "Done."
 
 echo ""
-echo "=== Group Allowlist ==="
+echo "=== Group Configuration ==="
 echo ""
-echo "If you use groupPolicy = \"allowlist\", you can restrict which Telegram"
-echo "groups the bot responds in. Add the bot to a group, then get the group"
-echo "ID by adding @RawDataBot — it will print the chat ID (e.g. -1001234567890)."
+echo "The bot uses groupPolicy = \"open\" so any member in a configured group"
+echo "can message it. To restrict WHICH groups the bot responds in, add group"
+echo "IDs here. Get a group ID by adding @RawDataBot to the group — it will"
+echo "print the chat ID (e.g. -1001234567890)."
 echo ""
-read -rp "Enter group IDs to allowlist (space-separated, or leave empty to skip): " GROUP_IDS
+read -rp "Enter group IDs (space-separated, or leave empty to skip): " GROUP_IDS
 
 if [ -n "${GROUP_IDS}" ]; then
   # Convert space-separated IDs to newline-separated
   GROUP_IDS_NL="$(echo "${GROUP_IDS}" | tr ' ' '\n')"
   echo ""
-  echo "Writing group allowlist to ${TARGET_HOST}:${GROUP_ALLOW_PATH}..."
+  echo "Writing group list to ${TARGET_HOST}:${GROUP_ALLOW_PATH}..."
   ${SSH} "echo '${GROUP_IDS_NL}' | sudo tee ${GROUP_ALLOW_PATH} > /dev/null && sudo chown kiosk:kiosk ${GROUP_ALLOW_PATH} && sudo chmod 600 ${GROUP_ALLOW_PATH}"
   echo "Done."
 fi
@@ -63,22 +64,11 @@ fi
 echo ""
 echo "=== Next Steps ==="
 echo ""
-echo "1. Enable the Telegram channel in your NixOS config:"
+echo "1. Deploy: FLAKE_ATTR=rpi5-telegram ./scripts/deploy.sh ${TARGET_HOST}"
 echo ""
-echo '   services.clawpi.telegram.enable = true;'
+echo "2. Verify: ssh nixos@${TARGET_HOST} sudo tail -50 /tmp/openclaw/openclaw-gateway.log"
 echo ""
-echo "   Optionally restrict access to specific Telegram user IDs:"
-echo ""
-echo '   services.clawpi.telegram.allowFrom = [ 123456789 ];'
-echo ""
-echo "   (Get your user ID from @userinfobot on Telegram.)"
-echo "   Without allowFrom, anyone who finds your bot can message the agent."
-echo ""
-echo "2. Deploy: FLAKE_ATTR=rpi5-telegram ./scripts/deploy.sh ${TARGET_HOST}"
-echo ""
-echo "3. Verify: ssh nixos@${TARGET_HOST} sudo tail -50 /tmp/openclaw/openclaw-gateway.log"
-echo ""
-echo "4. Send a message to your bot on Telegram. With the default dmPolicy"
+echo "3. Send a message to your bot on Telegram. With the default dmPolicy"
 echo "   (\"pairing\"), the bot will reply with a pairing code. Approve it:"
 echo ""
 echo "   ./scripts/approve-telegram.sh <PAIRING_CODE> ${TARGET_HOST}"

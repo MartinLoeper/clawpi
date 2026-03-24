@@ -198,7 +198,7 @@
               ];
               services.clawpi.telegram = {
                 enable = true;
-                groupPolicy = "allowlist";
+                groupPolicy = "open";
                 allowedGroupsFile = "/var/lib/clawpi/telegram-allowed-groups";
 
                 # Workaround for https://github.com/openclaw/openclaw/issues/34790
@@ -264,9 +264,8 @@
               ];
               services.clawpi.telegram = {
                 enable = true;
-                groupPolicy = "allowlist";
+                groupPolicy = "open";
                 allowedGroupsFile = "/var/lib/clawpi/telegram-allowed-groups";
-                allowFromFile = "/var/lib/clawpi/telegram-allow-from";
                 streaming = "block";
                 blockStreaming = true;
                 replyToMode = "all";
@@ -326,7 +325,7 @@
               ];
               services.clawpi.telegram = {
                 enable = true;
-                groupPolicy = "allowlist";
+                groupPolicy = "open";
                 allowedGroupsFile = "/var/lib/clawpi/telegram-allowed-groups";
 
                 # Workaround for https://github.com/openclaw/openclaw/issues/34790
@@ -463,7 +462,7 @@
                 enable = true;
                 streaming = "block";
                 blockStreaming = true;
-                groupPolicy = "allowlist";
+                groupPolicy = "open";
                 allowedGroupsFile = "/var/lib/clawpi/telegram-allowed-groups";
                 requireMentionInGroups = true;
                 replyToMode = "all";
