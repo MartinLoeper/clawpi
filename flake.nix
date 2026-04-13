@@ -72,7 +72,12 @@
             "/boot/firmware" = {
               device = "/dev/disk/by-label/FIRMWARE";
               fsType = "vfat";
-              options = [ "noatime" "noauto" "x-systemd.automount" "x-systemd.idle-timeout=1min" ];
+              options = [
+                "noatime"
+                "noauto"
+                "x-systemd.automount"
+                "x-systemd.idle-timeout=1min"
+              ];
             };
           };
           users.users.nixos = {
@@ -80,11 +85,19 @@
             extraGroups = [ "wheel" ];
           };
           nix.settings.trusted-users = [ "nixos" ];
-          nix.settings.experimental-features = [ "nix-command" "flakes" ];
+          nix.settings.experimental-features = [
+            "nix-command"
+            "flakes"
+          ];
           security.sudo.wheelNeedsPassword = false;
           services.openssh.settings.PermitRootLogin = "yes";
           # 1 GB swap — critical for the 1 GB Pi 4B, helpful everywhere
-          swapDevices = [{ device = "/var/swapfile"; size = 1024; }];
+          swapDevices = [
+            {
+              device = "/var/swapfile";
+              size = 1024;
+            }
+          ];
         }
       ];
 
@@ -239,6 +252,11 @@
               # services.clawpi.voice.enable = true;
               # services.clawpi.voice.threshold = 0.25;
               services.clawpi.allowedModels = [
+                # Copilot Codex
+                {
+                  id = "github-copilot/gpt-5.3-codex";
+                  name = "Codex 5.3";
+                }
                 # Anthropic
                 {
                   id = "anthropic/claude-sonnet-4-5";
@@ -422,6 +440,11 @@
               services.clawpi.cartesia.enable = true;
               # Voice pipeline disabled — too heavy for Pi 4B
               services.clawpi.allowedModels = [
+                # Copilot Codex
+                {
+                  id = "github-copilot/gpt-5.3-codex";
+                  name = "Codex 5.3";
+                }
                 # Anthropic
                 {
                   id = "anthropic/claude-sonnet-4-5";
