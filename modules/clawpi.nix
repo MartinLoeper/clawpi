@@ -62,6 +62,16 @@ in
       };
     };
 
+    defaultModel = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      description = ''
+        Default model ID (agents.defaults.model.primary in openclaw.json).
+        Must be a fully qualified provider/model-id string.
+        When null, the gateway picks its own default.
+      '';
+    };
+
     allowedModels = lib.mkOption {
       type = lib.types.listOf (lib.types.submodule {
         options = {

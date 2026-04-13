@@ -251,6 +251,7 @@
               # Voice pipeline disabled — too heavy for Pi 4B (continuous ONNX hotword detection)
               # services.clawpi.voice.enable = true;
               # services.clawpi.voice.threshold = 0.25;
+              services.clawpi.defaultModel = "github-copilot/gpt-5.3-codex";
               services.clawpi.allowedModels = [
                 # Copilot Codex
                 {
@@ -439,6 +440,7 @@
               services.clawpi.elevenlabs.enable = true;
               services.clawpi.cartesia.enable = true;
               # Voice pipeline disabled — too heavy for Pi 4B
+              services.clawpi.defaultModel = "github-copilot/gpt-5.3-codex";
               services.clawpi.allowedModels = [
                 # Copilot Codex
                 {

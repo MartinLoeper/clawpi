@@ -13,6 +13,7 @@ let
   mxCfg = osConfig.services.clawpi.matrix;
   tgCfg = osConfig.services.clawpi.telegram;
   allowedModelsCfg = osConfig.services.clawpi.allowedModels;
+  defaultModelCfg = osConfig.services.clawpi.defaultModel;
 
   # Append ClawPi-specific instructions to the agent's AGENTS.md at service start.
   # Uses a marker comment so the block is only injected once and updated in-place on redeploy.
@@ -133,12 +134,16 @@ let
 
   # Build the agents.defaults.models allowlist for openclaw.json.
   # See https://docs.openclaw.ai/concepts/models#model-is-not-allowed
-  modelsAllowlist = lib.optionalAttrs (allowedModelsCfg != []) {
-    agents.defaults.models = builtins.listToAttrs (map (m: {
-      name = m.id;
-      value = { alias = m.name; };
-    }) allowedModelsCfg);
-  };
+  modelsAllowlist =
+    lib.optionalAttrs (allowedModelsCfg != []) {
+      agents.defaults.models = builtins.listToAttrs (map (m: {
+        name = m.id;
+        value = { alias = m.name; };
+      }) allowedModelsCfg);
+    }
+    // lib.optionalAttrs (defaultModelCfg != null) {
+      agents.defaults.model.primary = defaultModelCfg;
+    };
 
   modelsAllowlistFile = pkgs.writeText "openclaw-models-allowlist.json"
     (builtins.toJSON modelsAllowlist);
@@ -345,7 +350,7 @@ in
         ++ lib.optional powerCfg.enable "CLAWPI_POWER_CONTROL=1";
       ExecStartPre = [ (toString patchAgentsScript) ]
         ++ lib.optional audioCfg.enable (toString patchConfigScript)
-        ++ lib.optional (allowedModelsCfg != []) (toString patchModelsScript)
+        ++ lib.optional (allowedModelsCfg != [] || defaultModelCfg != null) (toString patchModelsScript)
         ++ lib.optional mxCfg.enable (toString patchMatrixScript)
         ++ lib.optional (tgCfg.enable && tgCfg.allowFromFile != null) (toString patchTelegramAllowFromScript);
       ExecStartPost =
