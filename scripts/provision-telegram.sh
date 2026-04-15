@@ -16,6 +16,7 @@ TARGET_HOST="${1:-openclaw-rpi5.local}"
 KEY_FILE="${2:-${SCRIPT_DIR}/../id_ed25519_rpi5}"
 TOKEN_PATH="/var/lib/clawpi/telegram-bot-token"
 GROUP_ALLOW_PATH="/var/lib/clawpi/telegram-allowed-groups"
+USER_ALLOW_PATH="/var/lib/clawpi/telegram-allowed-users"
 
 if [ ! -f "${KEY_FILE}" ]; then
   echo "Error: SSH key not found at ${KEY_FILE}"
@@ -41,6 +42,22 @@ echo ""
 echo "Writing token to ${TARGET_HOST}:${TOKEN_PATH}..."
 ${SSH} "sudo mkdir -p /var/lib/clawpi && echo -n '${BOT_TOKEN}' | sudo tee ${TOKEN_PATH} > /dev/null && sudo chown kiosk:kiosk ${TOKEN_PATH} && sudo chmod 600 ${TOKEN_PATH}"
 echo "Done."
+
+echo ""
+echo "=== User Allowlist ==="
+echo ""
+echo "Users on this list can use slash commands (/new, /model, etc.) in groups."
+echo "Get your Telegram user ID by messaging @userinfobot."
+echo ""
+read -rp "Enter user IDs (space-separated, or leave empty to skip): " USER_IDS
+
+if [ -n "${USER_IDS}" ]; then
+  USER_IDS_NL="$(echo "${USER_IDS}" | tr ' ' '\n')"
+  echo ""
+  echo "Writing user allowlist to ${TARGET_HOST}:${USER_ALLOW_PATH}..."
+  ${SSH} "echo '${USER_IDS_NL}' | sudo tee ${USER_ALLOW_PATH} > /dev/null && sudo chown kiosk:kiosk ${USER_ALLOW_PATH} && sudo chmod 600 ${USER_ALLOW_PATH}"
+  echo "Done."
+fi
 
 echo ""
 echo "=== Group Configuration ==="
