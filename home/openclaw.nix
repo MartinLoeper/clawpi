@@ -276,6 +276,12 @@ in
         mode = "copy";
         source = "${pkgs.clawpi-skills}/share/clawpi-skills/video-watcher";
       }
+      {
+        name = "speak";
+        description = "Speak text aloud through the kiosk speakers using TTS.";
+        mode = "copy";
+        source = "${pkgs.clawpi-skills}/share/clawpi-skills/speak";
+      }
     ];
     config = {
       gateway = {

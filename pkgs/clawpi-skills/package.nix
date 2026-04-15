@@ -18,6 +18,10 @@ stdenvNoCC.mkDerivation {
     cp video-watcher/SKILL.md $out/share/clawpi-skills/video-watcher/
     cp video-watcher/scripts/get_transcript.py $out/share/clawpi-skills/video-watcher/scripts/
 
+    # Install the speak skill
+    mkdir -p $out/share/clawpi-skills/speak
+    cp speak/SKILL.md $out/share/clawpi-skills/speak/
+
     # Wrap the Python script so yt-dlp and python3 are on PATH
     makeWrapper ${python3}/bin/python3 $out/bin/video-watcher-transcript \
       --prefix PATH : ${lib.makeBinPath [ yt-dlp ]} \
