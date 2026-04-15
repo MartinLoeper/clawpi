@@ -285,6 +285,7 @@
                 enable = true;
                 groupPolicy = "open";
                 allowedGroupsFile = "/var/lib/clawpi/telegram-allowed-groups";
+                allowFromFile = "/var/lib/clawpi/telegram-allowed-users";
                 streaming = "block";
                 blockStreaming = true;
                 replyToMode = "all";
