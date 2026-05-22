@@ -14,6 +14,41 @@ Spin up a native aarch64 build server on Hetzner Cloud to avoid slow cross-compi
 - Packages aren't in the binary cache (e.g. from a different nixpkgs revision)
 - You need a native ARM build for testing
 
+## Existing Coder builder
+
+If the user provides a Coder SSH target for an existing Hetzner builder, reuse it instead of creating a new server.
+
+```sh
+# Configure local SSH aliases for Coder workspaces. This may prompt for confirmation.
+coder config-ssh
+
+# Connect using the target supplied by the user, for example:
+ssh dev.hetzner-builder.afkdev8.coder
+```
+
+Coder builders commonly start in `/workspaces`. If the project checkout is missing, clone it there and pin it to the same commit as the local checkout before building:
+
+```sh
+ssh <workspace-host> 'git clone https://github.com/MartinLoeper/clawpi.git /workspaces/clawpi'
+ssh <workspace-host> 'cd /workspaces/clawpi && git checkout <local-commit-sha>'
+```
+
+Start long Nix builds detached and write the complete unfiltered log to a file:
+
+```sh
+ssh <workspace-host> 'cd /workspaces/clawpi && nohup nix build .#nixosConfigurations.<flake-attr>.config.system.build.toplevel --accept-flake-config --show-trace -L > /workspaces/<flake-attr>-build.log 2>&1 & echo $! > /workspaces/<flake-attr>-build.pid'
+```
+
+When the user asks to check a running build, prefer starting a background watcher that waits for the build PID to finish, then report the final result. Avoid repeated manual polling unless the user explicitly wants an immediate snapshot.
+
+Useful snapshot command if needed:
+
+```sh
+ssh <workspace-host> 'pid=$(cat /workspaces/<flake-attr>-build.pid 2>/dev/null || true); if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then echo running; else echo stopped; fi; readlink -f /workspaces/clawpi/result 2>/dev/null; grep -n "^error:" /workspaces/<flake-attr>-build.log || true; tail -80 /workspaces/<flake-attr>-build.log'
+```
+
+Coder SSH can print workspace startup-script output on login. Treat that as Coder noise unless the Nix build log itself contains errors.
+
 ## Create the server
 
 ```sh
@@ -55,7 +90,7 @@ ssh root@<server-ip> "bash -lc 'git clone https://github.com/MartinLoeper/clawpi
 
 # 4. Start the build in a tmux session (so it survives SSH disconnects)
 #    Always pull latest changes before building!
-ssh root@<server-ip> "bash -lc 'cd clawpi && git pull && tmux new-session -d -s build \"nix build .#nixosConfigurations.rpi5.config.system.build.toplevel --show-trace -L 2>&1 | tee /tmp/build.log\"'"
+ssh root@<server-ip> "bash -lc 'cd clawpi && git pull && tmux new-session -d -s build \"nix build .#nixosConfigurations.rpi5.config.system.build.toplevel --accept-flake-config --show-trace -L 2>&1 | tee /tmp/build.log\"'"
 ```
 
 ### Monitoring the build
@@ -71,6 +106,9 @@ Other monitoring options:
 ```sh
 # Check latest output (snapshot, not streaming)
 ssh root@<server-ip> "tail -30 /tmp/build.log"
+
+# Check for build errors without streaming the whole log
+ssh root@<server-ip> "grep -n '^error:' /tmp/build.log || true"
 
 # Attach to the tmux session interactively
 ssh -t root@<server-ip> "tmux attach -t build"
