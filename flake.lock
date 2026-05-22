@@ -100,11 +100,11 @@
         "nixpkgs": "nixpkgs_2"
       },
       "locked": {
-        "lastModified": 1772888785,
-        "narHash": "sha256-VCWd484yWhnocIaS3Nf5/xRwSb/gjpuNDfESmZnLblQ=",
+        "lastModified": 1779405865,
+        "narHash": "sha256-urp/lsCZWsGQVt3hKOqC7uGTHT8/FiLW0OkLqUl/RMg=",
         "owner": "MartinLoeper",
         "repo": "nix-openclaw",
-        "rev": "5b6654e753ccbd1d16fb74621f1e5a4a4082c10a",
+        "rev": "ba0c3781d734c50ec962615408265a61b14fcebb",
         "type": "github"
       },
       "original": {
