@@ -414,7 +414,11 @@ in
           (lib.types.enum [ "off" "partial" "block" "progress" ])
         ]);
         default = null;
-        description = "Streaming mode for responses. null uses the gateway default.";
+        description = ''
+          Streaming mode for responses. null uses the gateway default.
+          Boolean and scalar modes are translated to OpenClaw's nested
+          channels.telegram.streaming schema.
+        '';
       };
 
       blockStreaming = lib.mkOption {
