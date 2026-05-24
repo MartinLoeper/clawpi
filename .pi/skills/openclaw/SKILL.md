@@ -8,12 +8,30 @@ user-invocable: true
 
 Run OpenClaw CLI commands on the Pi to inspect and manage the gateway.
 
+Current ClawPi `rpi4-telegram` target details:
+
+- Host: `nixos@192.168.36.113`
+- Key: `/home/afk/Documents/projects/clawpi/id_ed25519_rpi4`
+- Gateway: OpenClaw `2026.5.20`
+- Config mode: `OPENCLAW_NIX_MODE=1` (OpenClaw must not mutate config)
+
+For probes/deploys, prefer `-o UserKnownHostsFile=/dev/null` to avoid polluting known_hosts.
+
 ## Running commands on the Pi
 
 All commands run as the `kiosk` user (which owns the gateway process):
 
 ```sh
-ssh -i id_ed25519_rpi5 nixos@<host> "sudo -u kiosk XDG_RUNTIME_DIR=/run/user/\$(id -u kiosk) openclaw <command>"
+ssh -i id_ed25519_rpi5 nixos@<host> "sudo -u kiosk XDG_RUNTIME_DIR=/run/user/\$(id -u kiosk) DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/\$(id -u kiosk)/bus openclaw <command>"
+```
+
+For the Pi 4 Telegram target:
+
+```sh
+ssh -i /home/afk/Documents/projects/clawpi/id_ed25519_rpi4 \
+  -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+  nixos@192.168.36.113 \
+  'uid=$(id -u kiosk); sudo -u kiosk XDG_RUNTIME_DIR=/run/user/$uid DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$uid/bus openclaw <command>'
 ```
 
 Replace `<host>` with the Pi's address (e.g. `192.168.0.64` or `openclaw-rpi5.local`).
@@ -32,6 +50,7 @@ Shows all discovered plugins, their load status, and source paths.
 
 ```sh
 openclaw config get
+openclaw config validate
 ```
 
 Prints the current merged gateway configuration (JSON).
@@ -91,11 +110,28 @@ ssh -i id_ed25519_rpi5 nixos@<host> "sudo -u kiosk XDG_RUNTIME_DIR=/run/user/\$(
 - **Agent auth:** `/var/lib/kiosk/.openclaw/agents/main/agent/auth-profiles.json`
 - **Workspace:** `/var/lib/kiosk/.openclaw/workspace/`
 
-To read config (requires root since kiosk home is restricted):
+OpenClaw runs in Nix mode on ClawPi:
+
+- `OPENCLAW_NIX_MODE=1`
+- `openclaw doctor --fix` cannot mutate `openclaw.json`
+- fixes must be made in Nix source or in ClawPi's `ExecStartPre`/Home Manager activation JSON patch scripts
+- Home Manager activation rewrites `openclaw.json`, so runtime JSON patches that must survive deploys need to run during activation as well as before gateway start
+
+To read the most important runtime config values (requires root since kiosk home is restricted):
 
 ```sh
-ssh -i id_ed25519_rpi5 nixos@<host> "sudo cat /var/lib/kiosk/.openclaw/openclaw.json"
+ssh -i id_ed25519_rpi5 nixos@<host> \
+  'sudo jq -c "{model:.agents.defaults.model,models:.agents.defaults.models,telegram:.channels.telegram,plugins:.plugins,browser:.browser.enabled}" /var/lib/kiosk/.openclaw/openclaw.json'
 ```
+
+Expected for `rpi4-telegram` after activation:
+
+- `.agents.defaults.model.primary = "github-copilot/gpt-5.3-codex"`
+- `.plugins.entries.github-copilot.enabled = true`
+- `.plugins.entries.browser.enabled = true`
+- `.plugins.bundledDiscovery = "compat"`
+- `.channels.telegram.enabled = true`
+- `.channels.telegram.streaming` is an object with `mode = "block"`, not scalar `"block"`
 
 ## Send a message to the agent (CLI)
 
@@ -145,4 +181,7 @@ curl -s -X POST http://localhost:18789/tools/invoke \
 
 - **Plugin not loading:** Check `openclaw plugins list` — status should be `loaded`. If missing, verify `plugins.load.paths` in config points to the correct Nix store path.
 - **Tool execution failed:** Check gateway logs for the specific error. Common issues: missing binaries in PATH, wrong `XDG_RUNTIME_DIR`, permission errors.
-- **Config not updating:** Home Manager force-overwrites `openclaw.json` on activation, but the gateway may cache config. Restart the gateway after config changes.
+- **Config not updating:** Home Manager force-overwrites `openclaw.json` on activation. Put critical runtime patches in `home.activation.patchOpenClawRuntimeConfig` and `ExecStartPre`, then restart or let hot reload apply.
+- **`NixModeConfigMutationError`:** OpenClaw tried to auto-enable or mutate config while `OPENCLAW_NIX_MODE=1`. Explicitly set inferred entries in Nix, e.g. `plugins.entries.github-copilot.enabled = true`, `plugins.entries.browser.enabled = true`, `channels.telegram.enabled = true`, and `plugins.bundledDiscovery = "compat"`.
+- **Missing API key for provider `openai-codex`:** Check runtime config first. If `.agents.defaults.model.primary` is missing, OpenClaw fell back to an OpenAI Codex model. Ensure the models patch runs during Home Manager activation and verify `github-copilot/gpt-5.3-codex` is the primary model.
+- **Telegram streaming validation errors:** OpenClaw `2026.5.20` expects object-shaped `channels.telegram.streaming`; ClawPi translates legacy Nix options in `home/openclaw.nix` via `patch-openclaw-telegram-streaming`.
