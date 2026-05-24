@@ -231,7 +231,7 @@ let
   patchTelegramStreamingScript = pkgs.writeShellScript "patch-openclaw-telegram-streaming" ''
     configFile="$HOME/.openclaw/openclaw.json"
     if [ -f "$configFile" ]; then
-      ${pkgs.jq}/bin/jq -s '.[0] * .[1] | del(.channels.telegram.blockStreaming)' \
+      ${pkgs.jq}/bin/jq -s '.[0] * .[1] | del(.channels.telegram.blockStreaming, .channels.telegram.streamMode, .channels.telegram.chunkMode, .channels.telegram.draftChunk, .channels.telegram.blockStreamingCoalesce)' \
         "$configFile" "${telegramStreamingPatchFile}" > "$configFile.tmp" \
         && ${pkgs.coreutils}/bin/mv "$configFile.tmp" "$configFile"
     fi
@@ -260,7 +260,6 @@ let
       sendMessage = lib.mkIf (tgCfg.actions.sendMessage != null) tgCfg.actions.sendMessage;
       sticker = lib.mkIf (tgCfg.actions.sticker != null) tgCfg.actions.sticker;
     };
-    streaming = lib.mkIf (tgCfg.streaming != null) tgCfg.streaming;
   };
 
   # Runtime patching: add group IDs from allowedGroupsFile to channels.telegram.groups.
