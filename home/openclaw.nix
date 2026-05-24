@@ -238,6 +238,7 @@ let
 
   # Build the channels.telegram attrset only when enabled.
   telegramChannel = lib.mkIf tgCfg.enable {
+    enabled = true;
     tokenFile = tgCfg.tokenFile;
     allowFrom = lib.mkIf (tgCfg.allowFrom != [ ]) tgCfg.allowFrom;
     groupPolicy = lib.mkIf (tgCfg.groupPolicy != null) tgCfg.groupPolicy;
