@@ -356,6 +356,12 @@ in
     };
   };
 
+  home.activation.patchOpenClawTelegramStreaming = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    if [ -x ${toString patchTelegramStreamingScript} ]; then
+      ${toString patchTelegramStreamingScript}
+    fi
+  '';
+
   systemd.user.services.openclaw-gateway = {
     Unit = {
       After = [ "openclaw-gateway-token.service" ];
