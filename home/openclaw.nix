@@ -356,10 +356,15 @@ in
     };
   };
 
-  home.activation.patchOpenClawTelegramStreaming = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    if [ -x ${toString patchTelegramStreamingScript} ]; then
-      ${toString patchTelegramStreamingScript}
-    fi
+  home.activation.patchOpenClawRuntimeConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    ${lib.concatStringsSep "\n    " (
+      lib.optional audioCfg.enable (toString patchConfigScript)
+      ++ lib.optional (allowedModelsCfg != [] || defaultModelCfg != null) (toString patchModelsScript)
+      ++ lib.optional mxCfg.enable (toString patchMatrixScript)
+      ++ lib.optional tgCfg.enable (toString patchTelegramStreamingScript)
+      ++ lib.optional (tgCfg.enable && tgCfg.allowFromFile != null) (toString patchTelegramAllowFromScript)
+      ++ lib.optional (tgCfg.enable && tgCfg.allowedGroupsFile != null) (toString patchTelegramAllowedGroupsScript)
+    )}
   '';
 
   systemd.user.services.openclaw-gateway = {
