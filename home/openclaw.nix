@@ -213,14 +213,15 @@ let
     if [ -f "$configFile" ]; then
       ${pkgs.jq}/bin/jq '
         .channels.telegram as $tg
+        | ($tg.streaming | type) as $streamingType
         | .channels.telegram.streaming = ({
-            mode: ($tg.streaming // $tg.streamMode // "partial"),
+            mode: (if $streamingType == "object" then ($tg.streaming.mode // "partial") else ($tg.streaming // $tg.streamMode // "partial") end),
             block: {
-              enabled: ($tg.blockStreaming // false),
-              coalesce: ($tg.blockStreamingCoalesce // {})
+              enabled: (if $streamingType == "object" then ($tg.streaming.block.enabled // false) else ($tg.blockStreaming // false) end),
+              coalesce: (if $streamingType == "object" then ($tg.streaming.block.coalesce // {}) else ($tg.blockStreamingCoalesce // {}) end)
             },
-            preview: { chunk: ($tg.draftChunk // {}) }
-          } + (if ($tg.chunkMode // null) != null then { chunkMode: $tg.chunkMode } else {} end))
+            preview: { chunk: (if $streamingType == "object" then ($tg.streaming.preview.chunk // {}) else ($tg.draftChunk // {}) end) }
+          } + (if ($streamingType == "object" and ($tg.streaming.chunkMode // null) != null) then { chunkMode: $tg.streaming.chunkMode } elif ($tg.chunkMode // null) != null then { chunkMode: $tg.chunkMode } else {} end))
         | del(
             .channels.telegram.blockStreaming,
             .channels.telegram.streamMode,
