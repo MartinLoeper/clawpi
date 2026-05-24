@@ -206,13 +206,30 @@ let
     fi
   '';
 
-  # OpenClaw 2026.5.20 accepts the canonical scalar streaming mode but
-  # rejects the older companion keys. Strip those before gateway validation.
+  # nix-openclaw still exposes legacy scalar Telegram streaming options.
+  # Rewrite them to OpenClaw's canonical object before gateway validation.
   patchTelegramStreamingScript = pkgs.writeShellScript "patch-openclaw-telegram-streaming" ''
     configFile="$HOME/.openclaw/openclaw.json"
     if [ -f "$configFile" ]; then
-      ${pkgs.jq}/bin/jq 'del(.channels.telegram.blockStreaming, .channels.telegram.streamMode, .channels.telegram.chunkMode, .channels.telegram.draftChunk, .channels.telegram.blockStreamingCoalesce)' \
-        "$configFile" > "$configFile.tmp" \
+      ${pkgs.jq}/bin/jq '
+        .channels.telegram as $tg
+        | .channels.telegram.streaming = ({
+            mode: ($tg.streaming // $tg.streamMode // "partial"),
+            block: {
+              enabled: ($tg.blockStreaming // false),
+              coalesce: ($tg.blockStreamingCoalesce // {})
+            },
+            preview: { chunk: ($tg.draftChunk // {}) }
+          } + (if ($tg.chunkMode // null) != null then { chunkMode: $tg.chunkMode } else {} end))
+        | del(
+            .channels.telegram.blockStreaming,
+            .channels.telegram.streamMode,
+            .channels.telegram.chunkMode,
+            .channels.telegram.draftChunk,
+            .channels.telegram.blockStreamingCoalesce
+          )
+        | .plugins.bundledDiscovery = (.plugins.bundledDiscovery // "compat")
+      ' "$configFile" > "$configFile.tmp" \
         && ${pkgs.coreutils}/bin/mv "$configFile.tmp" "$configFile"
     fi
   '';
