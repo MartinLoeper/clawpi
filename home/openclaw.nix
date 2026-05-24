@@ -140,6 +140,7 @@ let
         name = m.id;
         value = { alias = m.name; };
       }) allowedModelsCfg);
+      plugins.entries.github-copilot.enabled = true;
     }
     // lib.optionalAttrs (defaultModelCfg != null) {
       agents.defaults.model.primary = defaultModelCfg;
@@ -262,18 +263,14 @@ let
   };
 
   # Runtime patching: add group IDs from allowedGroupsFile to channels.telegram.groups.
-  # Uses ExecStartPost (not ExecStartPre) because the gateway normalizes/overwrites
-  # openclaw.json on startup, which would clobber any pre-start JSON patches.
   patchTelegramAllowedGroupsScript = pkgs.writeShellScript "patch-openclaw-telegram-allowed-groups" ''
+    configFile="$HOME/.openclaw/openclaw.json"
     allowFile="${toString tgCfg.allowedGroupsFile}"
-    if [ -f "$allowFile" ]; then
-      # Wait for the gateway to finish its config normalization
-      ${pkgs.coreutils}/bin/sleep 2
-      configFile="$HOME/.openclaw/openclaw.json"
-      while IFS= read -r gid || [ -n "$gid" ]; do
-        [ -z "$gid" ] && continue
-        ${pkgs.openclaw-gateway}/bin/openclaw config set "channels.telegram.groups.$gid.requireMention" ${if tgCfg.requireMentionInGroups then "true" else "false"}
-      done < "$allowFile"
+    if [ -f "$configFile" ] && [ -f "$allowFile" ]; then
+      groups="$(${pkgs.coreutils}/bin/cat "$allowFile" | ${pkgs.gnused}/bin/sed '/^$/d' | ${pkgs.jq}/bin/jq -R '{key: ., value: {requireMention: ${if tgCfg.requireMentionInGroups then "true" else "false"}}}' | ${pkgs.jq}/bin/jq -s 'from_entries')"
+      ${pkgs.jq}/bin/jq --argjson groups "$groups" '.channels.telegram.groups = ((.channels.telegram.groups // {}) + $groups)' \
+        "$configFile" > "$configFile.tmp" \
+        && ${pkgs.coreutils}/bin/mv "$configFile.tmp" "$configFile"
     fi
   '';
 
@@ -311,6 +308,7 @@ in
       };
       channels.telegram = telegramChannel;
       browser = {
+        enabled = true;
         attachOnly = true;
         defaultProfile = "kiosk";
         profiles = {
@@ -329,9 +327,12 @@ in
         load.paths = [
           "${pkgs.clawpi-tools}/lib/clawpi-tools"
         ];
-        entries.clawpi-tools = {
-          enabled = true;
-          config = {};
+        entries = {
+          browser.enabled = true;
+          clawpi-tools = {
+            enabled = true;
+            config = {};
+          };
         };
       };
     };
@@ -381,9 +382,8 @@ in
         ++ lib.optional (allowedModelsCfg != [] || defaultModelCfg != null) (toString patchModelsScript)
         ++ lib.optional mxCfg.enable (toString patchMatrixScript)
         ++ lib.optional tgCfg.enable (toString patchTelegramStreamingScript)
-        ++ lib.optional (tgCfg.enable && tgCfg.allowFromFile != null) (toString patchTelegramAllowFromScript);
-      ExecStartPost =
-        lib.optional (tgCfg.enable && tgCfg.allowedGroupsFile != null) (toString patchTelegramAllowedGroupsScript);
+        ++ lib.optional (tgCfg.enable && tgCfg.allowFromFile != null) (toString patchTelegramAllowFromScript)
+        ++ lib.optional (tgCfg.enable && tgCfg.allowedGroupsFile != null) (toString patchTelegramAllowedGroupsScript);
     };
   };
 
