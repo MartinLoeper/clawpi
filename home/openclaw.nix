@@ -206,33 +206,13 @@ let
     fi
   '';
 
-  # Newer OpenClaw releases require channels.telegram.streaming to be an
-  # object, but nix-openclaw still exposes the old scalar option. Patch it
-  # into the generated JSON before the gateway validates the config.
-  telegramStreamingConfig =
-    let
-      mode =
-        if tgCfg.streaming == true then "partial"
-        else if tgCfg.streaming == false then "off"
-        else tgCfg.streaming;
-    in
-    lib.optionalAttrs (mode != null) { inherit mode; }
-    // lib.optionalAttrs (tgCfg.blockStreaming != null) {
-      block.enabled = tgCfg.blockStreaming;
-    };
-
-  telegramStreamingPatch = lib.optionalAttrs (tgCfg.enable && telegramStreamingConfig != { }) {
-    channels.telegram.streaming = telegramStreamingConfig;
-  };
-
-  telegramStreamingPatchFile = pkgs.writeText "openclaw-telegram-streaming-config.json"
-    (builtins.toJSON telegramStreamingPatch);
-
+  # OpenClaw 2026.5.20 accepts the canonical scalar streaming mode but
+  # rejects the older companion keys. Strip those before gateway validation.
   patchTelegramStreamingScript = pkgs.writeShellScript "patch-openclaw-telegram-streaming" ''
     configFile="$HOME/.openclaw/openclaw.json"
     if [ -f "$configFile" ]; then
-      ${pkgs.jq}/bin/jq -s '.[0] * .[1] | del(.channels.telegram.blockStreaming, .channels.telegram.streamMode, .channels.telegram.chunkMode, .channels.telegram.draftChunk, .channels.telegram.blockStreamingCoalesce)' \
-        "$configFile" "${telegramStreamingPatchFile}" > "$configFile.tmp" \
+      ${pkgs.jq}/bin/jq 'del(.channels.telegram.blockStreaming, .channels.telegram.streamMode, .channels.telegram.chunkMode, .channels.telegram.draftChunk, .channels.telegram.blockStreamingCoalesce)' \
+        "$configFile" > "$configFile.tmp" \
         && ${pkgs.coreutils}/bin/mv "$configFile.tmp" "$configFile"
     fi
   '';
@@ -260,6 +240,7 @@ let
       sendMessage = lib.mkIf (tgCfg.actions.sendMessage != null) tgCfg.actions.sendMessage;
       sticker = lib.mkIf (tgCfg.actions.sticker != null) tgCfg.actions.sticker;
     };
+    streaming = lib.mkIf (tgCfg.streaming != null) tgCfg.streaming;
   };
 
   # Runtime patching: add group IDs from allowedGroupsFile to channels.telegram.groups.
@@ -381,7 +362,7 @@ in
         ++ lib.optional audioCfg.enable (toString patchConfigScript)
         ++ lib.optional (allowedModelsCfg != [] || defaultModelCfg != null) (toString patchModelsScript)
         ++ lib.optional mxCfg.enable (toString patchMatrixScript)
-        ++ lib.optional (tgCfg.enable && telegramStreamingConfig != { }) (toString patchTelegramStreamingScript)
+        ++ lib.optional tgCfg.enable (toString patchTelegramStreamingScript)
         ++ lib.optional (tgCfg.enable && tgCfg.allowFromFile != null) (toString patchTelegramAllowFromScript);
       ExecStartPost =
         lib.optional (tgCfg.enable && tgCfg.allowedGroupsFile != null) (toString patchTelegramAllowedGroupsScript);
