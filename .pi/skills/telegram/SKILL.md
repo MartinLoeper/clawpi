@@ -6,7 +6,7 @@ user-invocable: false
 
 # Telegram Channel Internals
 
-Reference for debugging Telegram channel issues on the OpenClaw gateway (version pinned at rev `addd290f`).
+Reference for debugging Telegram channel issues on the OpenClaw gateway. Current ClawPi `rpi4-telegram` pins OpenClaw `2026.5.20` (`e5100428`) via `nix-openclaw`; older notes may mention rev `addd290f`.
 
 ## Gateway Source Layout
 
@@ -72,6 +72,55 @@ Non-image attachments go through `normalizeMediaAttachments()` which sets `Media
 
 ## Config Schema
 
+### Telegram streaming (`channels.telegram.streaming`)
+
+OpenClaw `2026.5.20` validates Telegram streaming as a canonical object, not the legacy scalar/string form that `nix-openclaw` still exposes through typed Nix options.
+
+Valid runtime shape:
+
+```json
+{
+  "channels": {
+    "telegram": {
+      "enabled": true,
+      "streaming": {
+        "mode": "block",
+        "block": {
+          "enabled": true,
+          "coalesce": {}
+        },
+        "preview": {
+          "chunk": {}
+        }
+      }
+    }
+  }
+}
+```
+
+Rejected legacy keys/values in runtime JSON:
+
+```json
+{
+  "channels": {
+    "telegram": {
+      "streaming": "block",
+      "blockStreaming": true,
+      "streamMode": "block",
+      "chunkMode": "newline",
+      "draftChunk": {},
+      "blockStreamingCoalesce": {}
+    }
+  }
+}
+```
+
+In ClawPi, keep public Nix options backward compatible (`services.clawpi.telegram.streaming = "block"`, `blockStreaming = true`) and translate them in `home/openclaw.nix` with `patch-openclaw-telegram-streaming`. This patch must be:
+
+- idempotent: it may run over already-object-shaped runtime config on restart/redeploy.
+- run in both `ExecStartPre` and Home Manager activation, because HM rewrites `/var/lib/kiosk/.openclaw/openclaw.json` during activation.
+- paired with `.plugins.bundledDiscovery = "compat"` for the current ClawPi plugin allowlist.
+
 ### Audio transcription (`tools.media.audio`)
 
 ```json
@@ -119,6 +168,10 @@ Verbose logs show:
 
 ### Common issues
 
+- **`channels.telegram.streaming: invalid config: must be object`** — Runtime config still has legacy scalar `streaming = "block"`. Check `/var/lib/kiosk/.openclaw/openclaw.json` and ensure `patch-openclaw-telegram-streaming` ran during activation and `ExecStartPre`.
+- **`channels.telegram.streaming.mode: invalid config: must be string`** — The streaming patch nested an object into `mode`; make the patch idempotent by preserving object-shaped `.channels.telegram.streaming` instead of treating it as a scalar.
+- **Telegram plugin missing from gateway plugin count** — Set `channels.telegram.enabled = true`; configured channel data alone may not be enough for `isBuiltInChannelAlreadyEnabled()`.
+- **Missing API key for provider `openai-codex` after Telegram input** — Usually means the default model patch did not survive Home Manager activation and OpenClaw fell back to `openai/gpt-5.5`. Verify `.agents.defaults.model.primary = "github-copilot/gpt-5.3-codex"` and `.plugins.entries.github-copilot.enabled = true` in runtime config.
 - **"detected non-image, dropping"** — This is from the push notification attachment handler (`push-apns-*.js`), NOT the main message pipeline. Audio attachments are handled separately.
 - **"Unrecognized key: id"** in `tools.media.models` — Stale config from a previous Groq attempt. Run `openclaw doctor --fix` or remove the offending key.
 - **Voice messages not transcribed** — Check: (1) `tools.media.audio.enabled` is `true` in runtime config, (2) `models` array has entries, (3) whisper-cli binary exists at the configured path, (4) model file exists.
@@ -134,5 +187,8 @@ grep -i 'audio\|voice\|transcri\|whisper\|MediaPath' /tmp/openclaw/openclaw-2026
 grep -i 'attachment\|media.*process\|download\|getFile' /tmp/openclaw/openclaw-2026-MM-DD.log
 
 # Telegram message flow
-grep 'telegram.*sendMessage\|telegram.*inbound\|telegram.*mention' /tmp/openclaw/openclaw-2026-MM-DD.log
+grep 'telegram.*sendMessage\|telegram.*Inbound\|telegram.*inbound\|telegram.*mention\|starting provider' /tmp/openclaw/openclaw-2026-MM-DD.log
+
+# Config/model/auth problems surfaced by Telegram turns
+grep -i 'openai-codex\|missing api\|model-fallback\|agents.defaults.model\|github-copilot' /tmp/openclaw/openclaw-gateway.log
 ```
