@@ -62,12 +62,12 @@ hcloud server create \
 
 Server types for ARM (`cax` series):
 
-| Type | vCPUs | RAM | Disk | Use case |
-|------|-------|-----|------|----------|
-| cax11 | 2 | 4 GB | 40 GB | Light builds |
+| Type      | vCPUs | RAM      | Disk      | Use case                         |
+| --------- | ----- | -------- | --------- | -------------------------------- |
+| cax11     | 2     | 4 GB     | 40 GB     | Light builds                     |
 | **cax21** | **4** | **8 GB** | **80 GB** | **Recommended for this project** |
-| cax31 | 8 | 16 GB | 160 GB | Parallel builds |
-| cax41 | 16 | 32 GB | 320 GB | Heavy builds |
+| cax31     | 8     | 16 GB    | 160 GB    | Parallel builds                  |
+| cax41     | 16    | 32 GB    | 320 GB    | Heavy builds                     |
 
 ## Set up the server
 
@@ -212,6 +212,7 @@ cat ~/.ssh/<name>-clawpi.pub | ssh root@<server-ip> "cat >> ~/.ssh/authorized_ke
 ## Why this exists
 
 The project uses two different nixpkgs revisions:
+
 - `nixos-raspberrypi` uses a custom nixpkgs fork (with RPi-specific patches)
 - `nix-openclaw` uses stock NixOS nixpkgs
 

@@ -72,7 +72,12 @@
             "/boot/firmware" = {
               device = "/dev/disk/by-label/FIRMWARE";
               fsType = "vfat";
-              options = [ "noatime" "noauto" "x-systemd.automount" "x-systemd.idle-timeout=1min" ];
+              options = [
+                "noatime"
+                "noauto"
+                "x-systemd.automount"
+                "x-systemd.idle-timeout=1min"
+              ];
             };
           };
           users.users.nixos = {
@@ -80,11 +85,19 @@
             extraGroups = [ "wheel" ];
           };
           nix.settings.trusted-users = [ "nixos" ];
-          nix.settings.experimental-features = [ "nix-command" "flakes" ];
+          nix.settings.experimental-features = [
+            "nix-command"
+            "flakes"
+          ];
           security.sudo.wheelNeedsPassword = false;
           services.openssh.settings.PermitRootLogin = "yes";
           # 1 GB swap — critical for the 1 GB Pi 4B, helpful everywhere
-          swapDevices = [{ device = "/var/swapfile"; size = 1024; }];
+          swapDevices = [
+            {
+              device = "/var/swapfile";
+              size = 1024;
+            }
+          ];
         }
       ];
 
@@ -169,6 +182,7 @@
               services.clawpi.audio.enable = true;
               services.clawpi.audio.groq.enable = true;
               services.clawpi.elevenlabs.enable = true;
+              services.clawpi.cartesia.enable = true;
               services.clawpi.voice.enable = true;
               services.clawpi.voice.threshold = 0.25;
               services.clawpi.allowedModels = [
@@ -197,6 +211,8 @@
               ];
               services.clawpi.telegram = {
                 enable = true;
+                groupPolicy = "open";
+                allowedGroupsFile = "/var/lib/clawpi/telegram-allowed-groups";
 
                 # Workaround for https://github.com/openclaw/openclaw/issues/34790
                 # Both properties prevent partial message edits in Telegram.
@@ -231,11 +247,17 @@
               services.clawpi.canvas.tmpfs = false;
               services.clawpi.audio.enable = true;
               services.clawpi.audio.groq.enable = true;
-              services.clawpi.elevenlabs.enable = true;
+              services.clawpi.cartesia.enable = true;
               # Voice pipeline disabled — too heavy for Pi 4B (continuous ONNX hotword detection)
               # services.clawpi.voice.enable = true;
               # services.clawpi.voice.threshold = 0.25;
+              services.clawpi.defaultModel = "github-copilot/gpt-5.3-codex";
               services.clawpi.allowedModels = [
+                # Copilot Codex
+                {
+                  id = "github-copilot/gpt-5.3-codex";
+                  name = "Codex 5.3";
+                }
                 # Anthropic
                 {
                   id = "anthropic/claude-sonnet-4-5";
@@ -261,6 +283,9 @@
               ];
               services.clawpi.telegram = {
                 enable = true;
+                groupPolicy = "open";
+                allowedGroupsFile = "/var/lib/clawpi/telegram-allowed-groups";
+                allowFromFile = "/var/lib/clawpi/telegram-allowed-users";
                 streaming = "block";
                 blockStreaming = true;
                 replyToMode = "all";
@@ -291,6 +316,7 @@
               services.clawpi.audio.enable = true;
               services.clawpi.audio.groq.enable = true;
               services.clawpi.elevenlabs.enable = true;
+              services.clawpi.cartesia.enable = true;
               services.clawpi.voice.enable = true;
               services.clawpi.voice.threshold = 0.25;
               services.clawpi.voice.assistantName = "jarvis";
@@ -320,6 +346,8 @@
               ];
               services.clawpi.telegram = {
                 enable = true;
+                groupPolicy = "open";
+                allowedGroupsFile = "/var/lib/clawpi/telegram-allowed-groups";
 
                 # Workaround for https://github.com/openclaw/openclaw/issues/34790
                 streaming = "block";
@@ -354,6 +382,7 @@
               services.clawpi.audio.enable = true;
               services.clawpi.audio.groq.enable = true;
               services.clawpi.elevenlabs.enable = true;
+              services.clawpi.cartesia.enable = true;
               services.clawpi.voice.enable = true;
               services.clawpi.voice.threshold = 0.25;
               services.clawpi.allowedModels = [
@@ -411,8 +440,15 @@
               services.clawpi.audio.enable = true;
               services.clawpi.audio.groq.enable = true;
               services.clawpi.elevenlabs.enable = true;
+              services.clawpi.cartesia.enable = true;
               # Voice pipeline disabled — too heavy for Pi 4B
+              services.clawpi.defaultModel = "github-copilot/gpt-5.3-codex";
               services.clawpi.allowedModels = [
+                # Copilot Codex
+                {
+                  id = "github-copilot/gpt-5.3-codex";
+                  name = "Codex 5.3";
+                }
                 # Anthropic
                 {
                   id = "anthropic/claude-sonnet-4-5";
@@ -454,6 +490,7 @@
                 streaming = "block";
                 blockStreaming = true;
                 groupPolicy = "open";
+                allowedGroupsFile = "/var/lib/clawpi/telegram-allowed-groups";
                 requireMentionInGroups = true;
                 replyToMode = "all";
                 ackReaction = "👀";

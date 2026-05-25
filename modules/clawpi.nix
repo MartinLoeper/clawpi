@@ -62,6 +62,16 @@ in
       };
     };
 
+    defaultModel = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      description = ''
+        Default model ID (agents.defaults.model.primary in openclaw.json).
+        Must be a fully qualified provider/model-id string.
+        When null, the gateway picks its own default.
+      '';
+    };
+
     allowedModels = lib.mkOption {
       type = lib.types.listOf (lib.types.submodule {
         options = {
@@ -143,6 +153,35 @@ in
           default = "whisper-large-v3-turbo";
           description = "Groq transcription model.";
         };
+      };
+    };
+
+    cartesia = {
+      enable = lib.mkEnableOption "Cartesia cloud TTS (tts_cartesia tool)";
+
+      apiKeyFile = lib.mkOption {
+        type = lib.types.path;
+        default = "/var/lib/clawpi/cartesia-api-key";
+        description = ''
+          Path to a file containing the Cartesia API key.
+          Provision with: ./scripts/provision-cartesia.sh
+        '';
+      };
+
+      voice = lib.mkOption {
+        type = lib.types.str;
+        default = "a0e99841-438c-4a64-b679-ae501e7d6091";
+        description = ''
+          Default Cartesia voice ID.
+        '';
+      };
+
+      model = lib.mkOption {
+        type = lib.types.str;
+        default = "sonic-2";
+        description = ''
+          Cartesia model ID (e.g. sonic-2, sonic-turbo).
+        '';
       };
     };
 
@@ -327,6 +366,16 @@ in
         '';
       };
 
+      allowFromFile = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        description = ''
+          Path to a file containing newline-separated Telegram user IDs
+          to add to allowFrom at service start. IDs are appended to any
+          statically configured allowFrom entries.
+        '';
+      };
+
       requireMentionInGroups = lib.mkOption {
         type = lib.types.bool;
         default = true;
@@ -339,13 +388,37 @@ in
         description = "Group message policy. null uses the gateway default (allowlist).";
       };
 
+      allowedGroups = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [ ];
+        description = ''
+          Telegram group/chat IDs allowed to interact with the bot.
+          When non-empty, only these groups are listed under channels.telegram.groups
+          (replacing the default "*" wildcard). Requires groupPolicy = "allowlist".
+        '';
+      };
+
+      allowedGroupsFile = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        description = ''
+          Path to a file containing newline-separated Telegram group/chat IDs.
+          These are merged with any statically configured allowedGroups entries
+          at service start.
+        '';
+      };
+
       streaming = lib.mkOption {
         type = lib.types.nullOr (lib.types.oneOf [
           lib.types.bool
           (lib.types.enum [ "off" "partial" "block" "progress" ])
         ]);
         default = null;
-        description = "Streaming mode for responses. null uses the gateway default.";
+        description = ''
+          Streaming mode for responses. null uses the gateway default.
+          Boolean and scalar modes are translated to OpenClaw's nested
+          channels.telegram.streaming schema.
+        '';
       };
 
       blockStreaming = lib.mkOption {

@@ -1,18 +1,22 @@
 #!/usr/bin/env bash
-# Provision a Telegram bot token on the Pi.
+# Provision a Telegram bot token and optional group allowlist on the Pi.
 #
 # Usage: ./scripts/provision-telegram.sh [host] [key_file]
 #
 # This script:
 # 1. Prompts for the bot token (from @BotFather)
 # 2. Writes it to /var/lib/clawpi/telegram-bot-token on the Pi
-# 3. Prints the next steps (get chat ID, enable in NixOS config)
+# 3. Optionally prompts for group IDs to allowlist
+# 4. Writes them to /var/lib/clawpi/telegram-allowed-groups on the Pi
+# 5. Prints the next steps
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 TARGET_HOST="${1:-openclaw-rpi5.local}"
 KEY_FILE="${2:-${SCRIPT_DIR}/../id_ed25519_rpi5}"
 TOKEN_PATH="/var/lib/clawpi/telegram-bot-token"
+GROUP_ALLOW_PATH="/var/lib/clawpi/telegram-allowed-groups"
+USER_ALLOW_PATH="/var/lib/clawpi/telegram-allowed-users"
 
 if [ ! -f "${KEY_FILE}" ]; then
   echo "Error: SSH key not found at ${KEY_FILE}"
@@ -40,24 +44,48 @@ ${SSH} "sudo mkdir -p /var/lib/clawpi && echo -n '${BOT_TOKEN}' | sudo tee ${TOK
 echo "Done."
 
 echo ""
+echo "=== User Allowlist ==="
+echo ""
+echo "Users on this list can use slash commands (/new, /model, etc.) in groups."
+echo "Get your Telegram user ID by messaging @userinfobot."
+echo ""
+read -rp "Enter user IDs (space-separated, or leave empty to skip): " USER_IDS
+
+if [ -n "${USER_IDS}" ]; then
+  USER_IDS_NL="$(echo "${USER_IDS}" | tr ' ' '\n')"
+  echo ""
+  echo "Writing user allowlist to ${TARGET_HOST}:${USER_ALLOW_PATH}..."
+  ${SSH} "echo '${USER_IDS_NL}' | sudo tee ${USER_ALLOW_PATH} > /dev/null && sudo chown kiosk:kiosk ${USER_ALLOW_PATH} && sudo chmod 600 ${USER_ALLOW_PATH}"
+  echo "Done."
+fi
+
+echo ""
+echo "=== Group Configuration ==="
+echo ""
+echo "The bot uses groupPolicy = \"open\" so any member in a configured group"
+echo "can message it. To restrict WHICH groups the bot responds in, add group"
+echo "IDs here. Get a group ID by adding @RawDataBot to the group — it will"
+echo "print the chat ID (e.g. -1001234567890)."
+echo ""
+read -rp "Enter group IDs (space-separated, or leave empty to skip): " GROUP_IDS
+
+if [ -n "${GROUP_IDS}" ]; then
+  # Convert space-separated IDs to newline-separated
+  GROUP_IDS_NL="$(echo "${GROUP_IDS}" | tr ' ' '\n')"
+  echo ""
+  echo "Writing group list to ${TARGET_HOST}:${GROUP_ALLOW_PATH}..."
+  ${SSH} "echo '${GROUP_IDS_NL}' | sudo tee ${GROUP_ALLOW_PATH} > /dev/null && sudo chown kiosk:kiosk ${GROUP_ALLOW_PATH} && sudo chmod 600 ${GROUP_ALLOW_PATH}"
+  echo "Done."
+fi
+
+echo ""
 echo "=== Next Steps ==="
 echo ""
-echo "1. Enable the Telegram channel in your NixOS config:"
+echo "1. Deploy: FLAKE_ATTR=rpi5-telegram ./scripts/deploy.sh ${TARGET_HOST}"
 echo ""
-echo '   services.clawpi.telegram.enable = true;'
+echo "2. Verify: ssh nixos@${TARGET_HOST} sudo tail -50 /tmp/openclaw/openclaw-gateway.log"
 echo ""
-echo "   Optionally restrict access to specific Telegram user IDs:"
-echo ""
-echo '   services.clawpi.telegram.allowFrom = [ 123456789 ];'
-echo ""
-echo "   (Get your user ID from @userinfobot on Telegram.)"
-echo "   Without allowFrom, anyone who finds your bot can message the agent."
-echo ""
-echo "2. Deploy: ./scripts/deploy.sh ${TARGET_HOST} --specialisation kiosk"
-echo ""
-echo "3. Verify: ssh nixos@${TARGET_HOST} sudo tail -50 /tmp/openclaw/openclaw-gateway.log"
-echo ""
-echo "4. Send a message to your bot on Telegram. With the default dmPolicy"
+echo "3. Send a message to your bot on Telegram. With the default dmPolicy"
 echo "   (\"pairing\"), the bot will reply with a pairing code. Approve it:"
 echo ""
 echo "   ./scripts/approve-telegram.sh <PAIRING_CODE> ${TARGET_HOST}"

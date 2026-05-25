@@ -7,11 +7,13 @@ let
   canvasCfg = osConfig.services.clawpi.canvas;
   canvasDir = if canvasCfg.tmpfs then "/tmp/clawpi-canvas" else "/var/lib/kiosk/.openclaw/canvas";
   canvasArchiveDir = "/var/lib/kiosk/.openclaw/canvas-archive";
+  cartesiaCfg = osConfig.services.clawpi.cartesia;
   elevenlabsCfg = osConfig.services.clawpi.elevenlabs;
   powerCfg = osConfig.services.clawpi.powerControl;
   mxCfg = osConfig.services.clawpi.matrix;
   tgCfg = osConfig.services.clawpi.telegram;
   allowedModelsCfg = osConfig.services.clawpi.allowedModels;
+  defaultModelCfg = osConfig.services.clawpi.defaultModel;
 
   # Append ClawPi-specific instructions to the agent's AGENTS.md at service start.
   # Uses a marker comment so the block is only injected once and updated in-place on redeploy.
@@ -132,12 +134,17 @@ let
 
   # Build the agents.defaults.models allowlist for openclaw.json.
   # See https://docs.openclaw.ai/concepts/models#model-is-not-allowed
-  modelsAllowlist = lib.optionalAttrs (allowedModelsCfg != []) {
-    agents.defaults.models = builtins.listToAttrs (map (m: {
-      name = m.id;
-      value = { alias = m.name; };
-    }) allowedModelsCfg);
-  };
+  modelsAllowlist =
+    lib.optionalAttrs (allowedModelsCfg != []) {
+      agents.defaults.models = builtins.listToAttrs (map (m: {
+        name = m.id;
+        value = { alias = m.name; };
+      }) allowedModelsCfg);
+      plugins.entries.github-copilot.enabled = true;
+    }
+    // lib.optionalAttrs (defaultModelCfg != null) {
+      agents.defaults.model.primary = defaultModelCfg;
+    };
 
   modelsAllowlistFile = pkgs.writeText "openclaw-models-allowlist.json"
     (builtins.toJSON modelsAllowlist);
@@ -200,12 +207,50 @@ let
     fi
   '';
 
+  # nix-openclaw still exposes legacy scalar Telegram streaming options.
+  # Rewrite them to OpenClaw's canonical object before gateway validation.
+  patchTelegramStreamingScript = pkgs.writeShellScript "patch-openclaw-telegram-streaming" ''
+    configFile="$HOME/.openclaw/openclaw.json"
+    if [ -f "$configFile" ]; then
+      ${pkgs.jq}/bin/jq '
+        .channels.telegram as $tg
+        | ($tg.streaming | type) as $streamingType
+        | .channels.telegram.streaming = ({
+            mode: (if $streamingType == "object" then ($tg.streaming.mode // "partial") else ($tg.streaming // $tg.streamMode // "partial") end),
+            block: {
+              enabled: (if $streamingType == "object" then ($tg.streaming.block.enabled // false) else ($tg.blockStreaming // false) end),
+              coalesce: (if $streamingType == "object" then ($tg.streaming.block.coalesce // {}) else ($tg.blockStreamingCoalesce // {}) end)
+            },
+            preview: { chunk: (if $streamingType == "object" then ($tg.streaming.preview.chunk // {}) else ($tg.draftChunk // {}) end) }
+          } + (if ($streamingType == "object" and ($tg.streaming.chunkMode // null) != null) then { chunkMode: $tg.streaming.chunkMode } elif ($tg.chunkMode // null) != null then { chunkMode: $tg.chunkMode } else {} end))
+        | del(
+            .channels.telegram.blockStreaming,
+            .channels.telegram.streamMode,
+            .channels.telegram.chunkMode,
+            .channels.telegram.draftChunk,
+            .channels.telegram.blockStreamingCoalesce
+          )
+        | .plugins.bundledDiscovery = (.plugins.bundledDiscovery // "compat")
+      ' "$configFile" > "$configFile.tmp" \
+        && ${pkgs.coreutils}/bin/mv "$configFile.tmp" "$configFile"
+    fi
+  '';
+
   # Build the channels.telegram attrset only when enabled.
   telegramChannel = lib.mkIf tgCfg.enable {
+    enabled = true;
     tokenFile = tgCfg.tokenFile;
     allowFrom = lib.mkIf (tgCfg.allowFrom != [ ]) tgCfg.allowFrom;
     groupPolicy = lib.mkIf (tgCfg.groupPolicy != null) tgCfg.groupPolicy;
-    groups."*".requireMention = tgCfg.requireMentionInGroups;
+    groups = if tgCfg.allowedGroups != [ ] then
+      builtins.listToAttrs (map (gid: {
+        name = gid;
+        value = { requireMention = tgCfg.requireMentionInGroups; };
+      }) tgCfg.allowedGroups)
+    else if tgCfg.allowedGroupsFile != null then
+      { }  # groups will be populated at runtime from the file
+    else
+      { "*" = { requireMention = tgCfg.requireMentionInGroups; }; };
     replyToMode = lib.mkIf (tgCfg.replyToMode != null) tgCfg.replyToMode;
     reactionLevel = lib.mkIf (tgCfg.reactionLevel != null) tgCfg.reactionLevel;
     reactionNotifications = lib.mkIf (tgCfg.reactionNotifications != null) tgCfg.reactionNotifications;
@@ -216,8 +261,31 @@ let
       sticker = lib.mkIf (tgCfg.actions.sticker != null) tgCfg.actions.sticker;
     };
     streaming = lib.mkIf (tgCfg.streaming != null) tgCfg.streaming;
-    blockStreaming = lib.mkIf (tgCfg.blockStreaming != null) tgCfg.blockStreaming;
   };
+
+  # Runtime patching: add group IDs from allowedGroupsFile to channels.telegram.groups.
+  patchTelegramAllowedGroupsScript = pkgs.writeShellScript "patch-openclaw-telegram-allowed-groups" ''
+    configFile="$HOME/.openclaw/openclaw.json"
+    allowFile="${toString tgCfg.allowedGroupsFile}"
+    if [ -f "$configFile" ] && [ -f "$allowFile" ]; then
+      groups="$(${pkgs.coreutils}/bin/cat "$allowFile" | ${pkgs.gnused}/bin/sed '/^$/d' | ${pkgs.jq}/bin/jq -R '{key: ., value: {requireMention: ${if tgCfg.requireMentionInGroups then "true" else "false"}}}' | ${pkgs.jq}/bin/jq -s 'from_entries')"
+      ${pkgs.jq}/bin/jq --argjson groups "$groups" '.channels.telegram.groups = ((.channels.telegram.groups // {}) + $groups)' \
+        "$configFile" > "$configFile.tmp" \
+        && ${pkgs.coreutils}/bin/mv "$configFile.tmp" "$configFile"
+    fi
+  '';
+
+  # Runtime patching: append user IDs from allowFromFile to channels.telegram.allowFrom.
+  patchTelegramAllowFromScript = pkgs.writeShellScript "patch-openclaw-telegram-allowfrom" ''
+    configFile="$HOME/.openclaw/openclaw.json"
+    allowFile="${toString tgCfg.allowFromFile}"
+    if [ -f "$configFile" ] && [ -f "$allowFile" ]; then
+      ids="$(${pkgs.coreutils}/bin/cat "$allowFile" | ${pkgs.gnused}/bin/sed '/^$/d' | ${pkgs.jq}/bin/jq -R 'tonumber' | ${pkgs.jq}/bin/jq -s '.')"
+      ${pkgs.jq}/bin/jq --argjson ids "$ids" '.channels.telegram.allowFrom = ((.channels.telegram.allowFrom // []) + $ids | unique)' \
+        "$configFile" > "$configFile.tmp" \
+        && ${pkgs.coreutils}/bin/mv "$configFile.tmp" "$configFile"
+    fi
+  '';
 in
 {
   # The gateway overwrites openclaw.json at runtime, which conflicts with
@@ -241,6 +309,7 @@ in
       };
       channels.telegram = telegramChannel;
       browser = {
+        enabled = true;
         attachOnly = true;
         defaultProfile = "kiosk";
         profiles = {
@@ -259,9 +328,12 @@ in
         load.paths = [
           "${pkgs.clawpi-tools}/lib/clawpi-tools"
         ];
-        entries.clawpi-tools = {
-          enabled = true;
-          config = {};
+        entries = {
+          browser.enabled = true;
+          clawpi-tools = {
+            enabled = true;
+            config = {};
+          };
         };
       };
     };
@@ -284,6 +356,17 @@ in
     };
   };
 
+  home.activation.patchOpenClawRuntimeConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    ${lib.concatStringsSep "\n    " (
+      lib.optional audioCfg.enable (toString patchConfigScript)
+      ++ lib.optional (allowedModelsCfg != [] || defaultModelCfg != null) (toString patchModelsScript)
+      ++ lib.optional mxCfg.enable (toString patchMatrixScript)
+      ++ lib.optional tgCfg.enable (toString patchTelegramStreamingScript)
+      ++ lib.optional (tgCfg.enable && tgCfg.allowFromFile != null) (toString patchTelegramAllowFromScript)
+      ++ lib.optional (tgCfg.enable && tgCfg.allowedGroupsFile != null) (toString patchTelegramAllowedGroupsScript)
+    )}
+  '';
+
   systemd.user.services.openclaw-gateway = {
     Unit = {
       After = [ "openclaw-gateway-token.service" ];
@@ -295,6 +378,11 @@ in
       Environment =
         [ "CLAWPI_CANVAS_DIR=${canvasDir}" "CLAWPI_CANVAS_ARCHIVE_DIR=${canvasArchiveDir}" ]
         ++ lib.optional debugCfg "OPENCLAW_LOG_LEVEL=debug"
+        ++ lib.optionals cartesiaCfg.enable [
+          "CLAWPI_CARTESIA_API_KEY_FILE=${toString cartesiaCfg.apiKeyFile}"
+          "CLAWPI_CARTESIA_VOICE=${cartesiaCfg.voice}"
+          "CLAWPI_CARTESIA_MODEL=${cartesiaCfg.model}"
+        ]
         ++ lib.optionals elevenlabsCfg.enable [
           "CLAWPI_ELEVENLABS_API_KEY_FILE=${toString elevenlabsCfg.apiKeyFile}"
           "CLAWPI_ELEVENLABS_VOICE=${elevenlabsCfg.voice}"
@@ -303,8 +391,11 @@ in
         ++ lib.optional powerCfg.enable "CLAWPI_POWER_CONTROL=1";
       ExecStartPre = [ (toString patchAgentsScript) ]
         ++ lib.optional audioCfg.enable (toString patchConfigScript)
-        ++ lib.optional (allowedModelsCfg != []) (toString patchModelsScript)
-        ++ lib.optional mxCfg.enable (toString patchMatrixScript);
+        ++ lib.optional (allowedModelsCfg != [] || defaultModelCfg != null) (toString patchModelsScript)
+        ++ lib.optional mxCfg.enable (toString patchMatrixScript)
+        ++ lib.optional tgCfg.enable (toString patchTelegramStreamingScript)
+        ++ lib.optional (tgCfg.enable && tgCfg.allowFromFile != null) (toString patchTelegramAllowFromScript)
+        ++ lib.optional (tgCfg.enable && tgCfg.allowedGroupsFile != null) (toString patchTelegramAllowedGroupsScript);
     };
   };
 

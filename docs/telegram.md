@@ -43,7 +43,7 @@ Without `allowFrom`, any Telegram user who finds your bot can request pairing.
 ### 4. Deploy
 
 ```sh
-./scripts/deploy.sh openclaw-rpi5.local --specialisation kiosk
+./scripts/deploy.sh openclaw-rpi5.local
 ```
 
 ### 5. Approve Pairing
@@ -67,6 +67,34 @@ services.clawpi.telegram = {
   requireMentionInGroups = false;  # respond to all messages in groups
 };
 ```
+
+### Group Allowlist
+
+To restrict which groups the bot responds in, set `groupPolicy` to `"allowlist"` and provide group chat IDs via a file on the Pi:
+
+```nix
+services.clawpi.telegram = {
+  enable = true;
+  groupPolicy = "allowlist";
+  allowedGroupsFile = "/var/lib/clawpi/telegram-allowed-groups";
+};
+```
+
+The file contains one group chat ID per line (e.g. `-1001234567890`). The provisioning script can create this file for you:
+
+```sh
+./scripts/provision-telegram.sh [host]
+```
+
+To get a group's chat ID, add **@RawDataBot** to the group — it will print the chat ID.
+
+You can also set group IDs statically in the NixOS config:
+
+```nix
+services.clawpi.telegram.allowedGroups = [ "-1001234567890" ];
+```
+
+Static `allowedGroups` entries and file-based `allowedGroupsFile` entries are merged at service start. Each group is configured with the `requireMentionInGroups` setting (default: `true`).
 
 ## Architecture
 
