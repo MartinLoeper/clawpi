@@ -293,6 +293,7 @@
               services.clawpi.elevenlabs.enable = true;
               services.clawpi.voice.enable = true;
               services.clawpi.voice.threshold = 0.25;
+              services.clawpi.voice.assistantName = "jarvis";
               services.clawpi.allowedModels = [
                 # Anthropic
                 {

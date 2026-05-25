@@ -4,7 +4,7 @@
 # Usage: ./scripts/deploy.sh [host] [nixos-rebuild args...]
 #
 # Set REMOTE_CACHE to a Hetzner ARM builder IP to fetch pre-built packages:
-#   REMOTE_CACHE=195.201.40.121 ./scripts/deploy.sh 192.168.0.64 --specialisation kiosk
+#   REMOTE_CACHE=195.201.40.121 ./scripts/deploy.sh 192.168.36.124 --specialisation kiosk
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

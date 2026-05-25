@@ -48,7 +48,7 @@ A random gateway token is generated on first boot by a companion user service (`
 Defaults to `openclaw-rpi5.local`. Pass an IP to override:
 
 ```sh
-./scripts/gateway-token.sh 192.168.0.64
+./scripts/gateway-token.sh 192.168.36.124
 ```
 
 The script prints the token and a ready-to-use dashboard URL with the token parameter.

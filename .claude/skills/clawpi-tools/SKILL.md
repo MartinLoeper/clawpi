@@ -162,7 +162,7 @@ This is required because Nix derives the store path from the version. Without bu
 1. Edit the category file (e.g. `audio.ts`, `screenshot.ts`) or add a new one
 2. Bump version in `openclaw.plugin.json` and `package.nix`
 3. `git add pkgs/clawpi-tools/` (Nix needs files tracked to see them)
-4. Deploy: `FLAKE_ATTR=rpi5-telegram-debug ./scripts/deploy.sh 192.168.0.64 --specialisation kiosk`
+4. Deploy: `FLAKE_ATTR=rpi5-telegram-debug ./scripts/deploy.sh 192.168.36.124 --specialisation kiosk`
 5. Restart gateway: `ssh -i id_ed25519_rpi5 nixos@<host> "sudo -u kiosk XDG_RUNTIME_DIR=/run/user/\$(id -u kiosk) systemctl --user restart openclaw-gateway.service"`
 6. Verify plugin loaded: `ssh -i id_ed25519_rpi5 nixos@<host> "sudo -u kiosk XDG_RUNTIME_DIR=/run/user/\$(id -u kiosk) openclaw plugins list"`
 7. Test parameterless tools via HTTP API, or test all tools by talking to the agent

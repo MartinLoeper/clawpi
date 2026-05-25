@@ -10,3 +10,4 @@ id_ed25519_rpi4.pub
 .claude/scheduled_tasks.lock
 training/training.log
 .env
+.codereview.nvim

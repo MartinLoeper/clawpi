@@ -16,7 +16,7 @@ All commands run as the `kiosk` user (which owns the gateway process):
 ssh -i id_ed25519_rpi5 nixos@<host> "sudo -u kiosk XDG_RUNTIME_DIR=/run/user/\$(id -u kiosk) openclaw <command>"
 ```
 
-Replace `<host>` with the Pi's address (e.g. `192.168.0.64` or `openclaw-rpi5.local`).
+Replace `<host>` with the Pi's address (e.g. `192.168.36.124` or `openclaw-rpi5.local`).
 
 ## Common commands
 

@@ -41,7 +41,7 @@ sudo /run/current-system/bin/switch-to-configuration switch
 ### Deploy directly into kiosk mode
 
 ```sh
-./scripts/deploy.sh 192.168.0.64 --specialisation kiosk
+./scripts/deploy.sh 192.168.36.124 --specialisation kiosk
 ```
 
 ## Session Startup
