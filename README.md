@@ -61,3 +61,4 @@ A custom Go service (`clawpi`) connects to the OpenClaw gateway WebSocket as a `
 ## Documentation
 
 Additional design docs and integration guides live in [`docs/`](docs/).
+
