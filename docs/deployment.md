@@ -24,7 +24,7 @@ For SD image builds, build on the Hetzner server first, then `nix copy` the resu
 
 ## Specialisation Switching
 
-The system supports NixOS specialisations. The base system is CLI-only; the kiosk specialisation adds the graphical stack (labwc + Chromium).
+The system supports NixOS specialisations. In the current compatibility mode, the base system also includes the kiosk graphical services (greetd + labwc + Chromium) so greetd starts reliably at boot. A runtime `kiosk` specialisation is still exposed for deployment and activation compatibility, so `--specialisation kiosk` should resolve instead of failing with `specialisation not found`.
 
 ### Activate kiosk mode (runtime)
 
@@ -32,11 +32,13 @@ The system supports NixOS specialisations. The base system is CLI-only; the kios
 ssh nixos@<host> "sudo \$(readlink -f /nix/var/nix/profiles/system)/specialisation/kiosk/bin/switch-to-configuration switch"
 ```
 
-### Return to CLI mode (runtime)
+### Return to base mode (runtime)
 
 ```sh
 ssh nixos@<host> sudo /run/current-system/bin/switch-to-configuration switch
 ```
+
+Note: base mode currently still includes the kiosk graphical services for reliability; it is not a strict CLI-only mode under compatibility mode.
 
 ### Known Issue: Specialisation Not Activating on Deploy
 
@@ -46,14 +48,14 @@ ssh nixos@<host> sudo /run/current-system/bin/switch-to-configuration switch
 # Check which system is active (base vs kiosk)
 readlink /run/current-system
 
-# If the compositor service is not running, the kiosk spec wasn't activated:
-ssh nixos@<host> sudo systemctl status labwc-tty1
+# If the graphical login is not running, inspect greetd:
+ssh nixos@<host> sudo systemctl status greetd
 
 # Manually activate the kiosk specialisation:
 ssh nixos@<host> "sudo \$(readlink -f /nix/var/nix/profiles/system)/specialisation/kiosk/bin/switch-to-configuration switch"
 
-# Then restart the compositor since switch-to-configuration skips it:
-ssh nixos@<host> sudo systemctl restart labwc-tty1
+# Then restart greetd if needed:
+ssh nixos@<host> sudo systemctl restart greetd
 
 # Verify openclaw-gateway is running (may need manual start after spec switch):
 ssh nixos@<host> "sudo -u kiosk XDG_RUNTIME_DIR=/run/user/\$(id -u kiosk) systemctl --user start openclaw-gateway"
